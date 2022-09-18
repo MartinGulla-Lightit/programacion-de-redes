@@ -1,4 +1,4 @@
-namespace AppServidor.Classes
+namespace AppServidor.Clases
 {
     public class Mensaje
     {

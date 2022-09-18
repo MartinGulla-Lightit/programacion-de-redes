@@ -1,4 +1,4 @@
-namespace AppServidor.Classes
+namespace AppServidor.Clases
 {
     public class Sistema
     {
@@ -19,8 +19,8 @@ namespace AppServidor.Classes
             }
             else
             {
-                Usuarios.Add(new User(username, password));
-                return LoginUser(username, password);
+                Usuarios.Add(new User(username, password, Usuarios.Count));
+                return "Registro exitoso!";
             }
         }
 
@@ -50,11 +50,10 @@ namespace AppServidor.Classes
 
         public string LoginUser(string username, string password)
         {
-            var user = Usuarios.FirstOrDefault(u => u.Username == username && u.Password == password);
-            if (user != null && !user.IsLogged)
+            var user = Usuarios.FirstOrDefault(u => u.Username.Equals(username) && u.Password.Equals(password));
+            if (user != null)
             {
-                user.IsLogged = true;
-                return $"Bienvenido {user.Username}";
+                return $"{user.Id}|{user.Username}";
             }
             else
             {
@@ -67,13 +66,23 @@ namespace AppServidor.Classes
             var user = Usuarios.FirstOrDefault(u => u.Username == username && u.Password == password);
             if (user != null)
             {
-                user.IsLogged = false;
                 return $"Hasta luego {user.Username}";
             }
             else
             {
                 return "Usuario o contraseña incorrectos";
             }
+        }
+
+        public string CrearPerfilDeTrabajo(string userId, string descripcion, string[] habilidades){
+            var user = Usuarios.FirstOrDefault(u => u.Id == int.Parse(userId));
+            if (user != null && user.descripcion == null)
+            {
+                user.descripcion = descripcion;
+                user.habilidades = habilidades;
+                return $"Perfil de trabajo creado";
+            }
+            return "";
         }
     }
 }

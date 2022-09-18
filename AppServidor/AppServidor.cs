@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Text;
 using Protocolo;
-using AppServidor.Classes;
+using AppServidor.Clases;
 
 
 namespace AppServidor
@@ -218,6 +218,11 @@ namespace AppServidor
                     case "3":
                         Logout(mensaje, socketCliente);
                         break;
+                    case "4":
+                        CrearPerfilDeTrabajo(mensaje, socketCliente);
+                        break;
+                    default:
+                        break;
                 }
             }
         }
@@ -228,7 +233,8 @@ namespace AppServidor
             string usuario = datos[0];
             string password = datos[1];
             string respuesta = _sistema.LoginUser(usuario, password);
-            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
+            int command = respuesta.Contains("|") ? Constantes.RespuestaLoginExistoso : Constantes.RespuestaLoginFallido;
+            SendMessage(command, respuesta, socketCliente);
         }
 
         public static void Registrarse(string mensaje, Socket socketCliente)
@@ -247,6 +253,17 @@ namespace AppServidor
             string password = datos[1];
             string respuesta = _sistema.LogoutUser(usuario, password);
             SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
+        }
+
+        public static void CrearPerfilDeTrabajo(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            string usuarioId = datos[0];
+            string descripcion = datos[1];
+            string[] habilidades = datos[2].Split('#');
+            string respuesta = _sistema.CrearPerfilDeTrabajo(usuarioId, descripcion, habilidades);
+            int command = respuesta.Length > 0 ? Constantes.RespuestaAltaPerfilTrabajoExistoso : Constantes.RespuestaAltaPerfilTrabajoFallido;
+            SendMessage(command, respuesta, socketCliente);
         }
     }
 }

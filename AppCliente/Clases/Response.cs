@@ -1,4 +1,4 @@
-namespace AppCliente.Classes;
+namespace AppCliente.Clases;
 
 public class Response
 {
