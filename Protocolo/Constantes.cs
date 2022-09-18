@@ -22,5 +22,8 @@ public static class Constantes
     public const int ListarPerfilesTrabajo = 5;
     public const int RespuestaListarPerfilesTrabajoExitoso = 5;
     public const int RespuestaListarPerfilesTrabajoFallido = 0;
+    public const int ConsultarPerfilEspecifico = 6;
+    public const int RespuestaConsultarPerfilEspecificoExitoso = 6;
+    public const int RespuestaConsultarPerfilEspecificoFallido = 0;
     
 }

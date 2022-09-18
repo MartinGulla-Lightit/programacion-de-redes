@@ -101,5 +101,13 @@ namespace AppServidor.Clases
             }
             return string.Join("|", perfiles.Select(u => $"{u.Id}#{u.Username}#{u.descripcion}#{string.Join(", ", (u.habilidades))}"));
         }
+
+        public string ConsultarPerfilEspecifico(string userId){
+            var usuario = BuscarUsuario(int.Parse(userId));
+            if (usuario != null && usuario.descripcion != null){
+                return $"{usuario.Id}#{usuario.Username}#{usuario.descripcion}#{string.Join(", ", (usuario.habilidades))}";
+            }
+            return "";
+        }
     }
 }
