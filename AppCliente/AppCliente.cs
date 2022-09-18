@@ -195,7 +195,7 @@ namespace AppCliente
                     message = $"{user}|{password}";
                     SendMessage(Constantes.Login, message, socketCliente);
                     response = RecibirMensaje(socketCliente);
-                    TryLogin(response);
+                    TryLogin(response, socketCliente);
                     break;
                 case "2":
                     Console.WriteLine("Ingrese nuevo nombre de usuario");
@@ -212,14 +212,14 @@ namespace AppCliente
             }
         }
 
-        public static void TryLogin(string[] response){
+        public static void TryLogin(string[] response, Socket socketCliente){
             if(response[1].Equals(Constantes.RespuestaLoginExistoso.ToString())){
                 string[] data = response[2].Split('|');
                 int id = int.Parse(data[0]);
                 string username = data[1];
                 _sistema.Usuario = new User(id, username);
                 Console.WriteLine("Login exitoso, bienvenido {0}", username);
-                EnterLoggedInStatus();
+                EnterLoggedInStatus(socketCliente);
             } else {
                 Console.WriteLine("Login fallido");
             }
@@ -227,7 +227,7 @@ namespace AppCliente
 
         // Seccion de funcionalidades
 
-        public static void EnterLoggedInStatus(){
+        public static void EnterLoggedInStatus(Socket socketCliente){
             bool loggedIn = true;
             while(loggedIn){
                 ShowLoggedInMenu();
@@ -239,7 +239,7 @@ namespace AppCliente
                 }
                 else
                 {
-                    ExecuteLoggedInAction(option);
+                    ExecuteLoggedInAction(option, socketCliente);
                 }
             }
         }
@@ -255,11 +255,11 @@ namespace AppCliente
             // Console.WriteLine("8. Cambiar Puerto????");
         }
 
-        public static void ExecuteLoggedInAction(string option){
+        public static void ExecuteLoggedInAction(string option, Socket socketCliente){
             switch (option)
             {
                 case "1":
-                    Console.WriteLine("AltaPerfilTrabajo()");
+                    AltaPerfilTrabajo(socketCliente);
                     break;
                 case "2":
                     Console.WriteLine("AsociarFotoPerfilTrabajo()");
@@ -282,6 +282,36 @@ namespace AppCliente
                 default:
                     Console.WriteLine("Opcion incorrecta");
                     break;
+            }
+        }
+
+        public static void AltaPerfilTrabajo(Socket socketCliente)
+        {
+            Console.WriteLine("Ingrese descripcion del perfil");
+            string descripcion = Console.ReadLine();
+            List<string> listaHabilidades = new List<string>();
+            bool continuar = true;
+            while (continuar)
+            {
+                Console.WriteLine("Ingrese habilidad");
+                string habilidad = Console.ReadLine();
+                listaHabilidades.Add(habilidad);
+                Console.WriteLine("Desea agregar otra habilidad? (s/n)");
+                string respuesta = Console.ReadLine();
+                if (respuesta.Equals("n", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    continuar = false;
+                }
+            }
+            string[] habilidadesArray = listaHabilidades.ToArray();
+            string habilidades = string.Join("#", habilidadesArray);
+            string message = $"{_sistema.Usuario.Id}|{descripcion}|{habilidades}";
+            SendMessage(Constantes.AltaPerfilTrabajo, message, socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[1].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
+                Console.WriteLine("Alta de perfil de trabajo exitosa");
+            } else {
+                Console.WriteLine("Alta de perfil de trabajo fallida");
             }
         }
     }

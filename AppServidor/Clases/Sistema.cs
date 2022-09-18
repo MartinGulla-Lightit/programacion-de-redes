@@ -66,13 +66,23 @@ namespace AppServidor.Clases
             var user = Usuarios.FirstOrDefault(u => u.Username == username && u.Password == password);
             if (user != null)
             {
-                user.IsLogged = false;
                 return $"Hasta luego {user.Username}";
             }
             else
             {
                 return "Usuario o contraseña incorrectos";
             }
+        }
+
+        public string CrearPerfilDeTrabajo(string userId, string descripcion, string[] habilidades){
+            var user = Usuarios.FirstOrDefault(u => u.Id == int.Parse(userId));
+            if (user != null && user.descripcion == null)
+            {
+                user.descripcion = descripcion;
+                user.habilidades = habilidades;
+                return $"Perfil de trabajo creado";
+            }
+            return "";
         }
     }
 }
