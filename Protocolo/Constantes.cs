@@ -8,4 +8,9 @@ public static class Constantes
     public const int Command = 1;
 
     public const int Login = 1;
+    public const int Registrarse = 2;
+    public const int Logout = 3;
+
+    public const int RespuestaLoginExistoso = 1;
+    public const int RespuestaLoginFallido = 0;
 }
