@@ -4,13 +4,15 @@ using System.Net;
 using System.Threading;
 using System.Text;
 using Protocolo;
+using AppServidor.Classes;
 
 
 namespace AppServidor
 {
     class MainClass
     {
-       
+        private static Sistema _sistema = new Sistema();
+
         public static void Main(string[] args)
         {
             Console.WriteLine("Iniciando Aplicacion Servidor....!!!");
@@ -52,38 +54,7 @@ namespace AppServidor
                 while (clienteConectado)
                 {
 
-                    // Primero recibo el largo del mensaje en 4 bytes
-                    byte[] dataLength = new byte[Constantes.LargoFijo];
-                    int offset = 0;
-                    int size = Constantes.LargoFijo;
-
-                    while (offset < size)
-                    {
-                        int recibidos = socketCliente.Receive(dataLength, offset, size - offset, SocketFlags.None);
-                        if (recibidos == 0)
-                        {
-                            throw new SocketException();
-                        }
-                        offset += recibidos;
-                    }
-
-                    // Ahora recibo el mensaje 
-                     
-                    byte[] data = new byte[BitConverter.ToInt32(dataLength,0)];
-                    // en Visual Studio no es necesario el parametro 0, solo con el buffer es suficiente
-                    offset = 0;
-                    size = BitConverter.ToInt32(dataLength, 0);
-                    while (offset < size)
-                    {
-                        int recibidos = socketCliente.Receive(data, offset, size - offset, SocketFlags.None);
-                        if (recibidos == 0)
-                        {
-                            throw new SocketException();
-                        }
-                        offset += recibidos;
-                    }
-                    string mensaje = Encoding.UTF8.GetString(data);
-                    Console.WriteLine("El cliente {0} dice: {1}", nro, mensaje);
+                    RecibirMensaje(socketCliente);
 
 
                     //// Envio una respuesta al cliente
@@ -103,6 +74,179 @@ namespace AppServidor
             {
                 Console.WriteLine("Cliente Desconectado!");
             }
+        }
+
+        public static void RecibirMensaje(Socket socketCliente)
+        {
+            //Primero recibo el Header del mensaje
+            int offset = 0;
+            int size = Constantes.Header;
+            byte[] dataHeader = new byte[size];
+            while (offset < size)
+            {
+                int recibidos = socketCliente.Receive(dataHeader, offset, size - offset, SocketFlags.None);
+                if (recibidos == 0)
+                {
+                    throw new SocketException();
+                }
+                offset += recibidos;
+            }
+
+            // Recibo el comando
+            offset = 0;
+            size = 1;
+            byte[] dataCommand = new byte[1];
+            while (offset < size)
+            {
+                int recibidos = socketCliente.Receive(dataCommand, offset, size - offset, SocketFlags.None);
+                if (recibidos == 0)
+                {
+                    throw new SocketException();
+                }
+                offset += recibidos;
+            }
+
+            // Recibo el largo del mensaje en 4 bytes
+            byte[] dataLength = new byte[Constantes.LargoFijo];
+            offset = 0;
+            size = Constantes.LargoFijo;
+            while (offset < size)
+            {
+                int recibidos = socketCliente.Receive(dataLength, offset, size - offset, SocketFlags.None);
+                if (recibidos == 0)
+                {
+                    throw new SocketException();
+                }
+                offset += recibidos;
+            }
+
+            // Ahora recibo el mensaje 
+            byte[] data = new byte[BitConverter.ToInt32(dataLength, 0)];
+            // en Visual Studio no es necesario el parametro 0, solo con el buffer es suficiente
+            offset = 0;
+            size = BitConverter.ToInt32(dataLength, 0);
+            while (offset < size)
+            {
+                int recibidos = socketCliente.Receive(data, offset, size - offset, SocketFlags.None);
+                if (recibidos == 0)
+                {
+                    throw new SocketException();
+                }
+                offset += recibidos;
+            }
+            string Header = Encoding.UTF8.GetString(dataHeader);
+            string comando = Encoding.UTF8.GetString(dataCommand);
+            string mensaje = Encoding.UTF8.GetString(data);
+            Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            DecidirRespuesta(Header, comando, mensaje, socketCliente);
+
+            // SendMessage(Constantes.RespuestaLoginExistoso, "Login existoso", socketCliente);
+        }
+
+        public static void SendMessage(int command, string mensaje, Socket socketCliente){
+            byte[] data = Encoding.UTF8.GetBytes(mensaje);
+            byte[] dataLength = BitConverter.GetBytes(data.Length);
+
+            // Mando primero el Header
+            int offset = 0;
+            int size = Constantes.Header;
+            byte[] dataHeader = Encoding.UTF8.GetBytes("RES");
+            while (offset < size) 
+            {
+                int enviados = socketCliente.Send(dataHeader, offset, size - offset, SocketFlags.None);
+                if (enviados == 0) 
+                {
+                    throw new SocketException();   
+                }
+                offset += enviados;
+            }
+
+            // Mando el comando
+            offset = 0;
+            size = Constantes.Command;
+            string dataCommand = command.ToString();
+            byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
+            while (offset < size) 
+            {
+                int enviados = socketCliente.Send(dataCommand2, offset, size - offset, SocketFlags.None);
+                if (enviados == 0) 
+                {
+                    throw new SocketException();   
+                }
+                offset += enviados;
+            }
+
+            // Mando el tamaño del mensaje
+            offset = 0;
+            size = Constantes.LargoFijo;
+            while (offset < size) 
+            {
+                int enviados = socketCliente.Send(dataLength, offset, size - offset, SocketFlags.None);
+                if (enviados == 0) 
+                {
+                    throw new SocketException();   
+                }
+                offset += enviados;
+            }
+
+            // Mando el mensaje
+            offset = 0;
+            size = data.Length;
+            while (offset < size)
+            {
+                int enviados = socketCliente.Send(data, offset, size - offset, SocketFlags.None);
+                if (enviados == 0)
+                {
+                    throw new SocketException();
+                }
+                offset += enviados;
+            }
+        }
+
+        public static void DecidirRespuesta(string Header, string comando, string mensaje, Socket socketCliente)
+        {
+            if (Header == "REQ")
+            {
+                switch (comando)
+                {
+                    case "1":
+                        Login(mensaje, socketCliente);
+                        break;
+                    case "2":
+                        Registrarse(mensaje, socketCliente);
+                        break;
+                    case "3":
+                        Logout(mensaje, socketCliente);
+                        break;
+                }
+            }
+        }
+
+        public static void Login(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            string usuario = datos[0];
+            string password = datos[1];
+            string respuesta = _sistema.LoginUser(usuario, password);
+            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
+        }
+
+        public static void Registrarse(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            string usuario = datos[0];
+            string password = datos[1];
+            string respuesta = _sistema.RegistrarUser(usuario, password);
+            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
+        }
+
+        public static void Logout(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            string usuario = datos[0];
+            string password = datos[1];
+            string respuesta = _sistema.LogoutUser(usuario, password);
+            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
         }
     }
 }
