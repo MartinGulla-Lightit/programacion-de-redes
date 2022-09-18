@@ -4,7 +4,7 @@ using System.Net;
 using System.Threading;
 using System.Text;
 using Protocolo;
-using AppServidor.Classes;
+using AppServidor.Clases;
 
 
 namespace AppServidor
@@ -228,7 +228,8 @@ namespace AppServidor
             string usuario = datos[0];
             string password = datos[1];
             string respuesta = _sistema.LoginUser(usuario, password);
-            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, socketCliente);
+            int command = respuesta.Contains("|") ? Constantes.RespuestaLoginExistoso : Constantes.RespuestaLoginFallido;
+            SendMessage(command, respuesta, socketCliente);
         }
 
         public static void Registrarse(string mensaje, Socket socketCliente)

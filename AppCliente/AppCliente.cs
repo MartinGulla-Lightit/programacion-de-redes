@@ -3,13 +3,14 @@ using System.Net.Sockets;
 using System.Net;
 using System.Text;
 using Protocolo;
-using AppCliente.Classes;
+using AppCliente.Clases;
 
 
 namespace AppCliente
 {
     class MainClass
     {
+        private static Sistema _sistema = new Sistema();
         public static void Main(string[] args)
         {
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
@@ -28,35 +29,26 @@ namespace AppCliente
             bool parar = false;
             while (!parar)
             {
-                ShowMenu();
+                ShowMainMenu();
 
                 String mensaje = Console.ReadLine();
 
-                ExecuteAction(mensaje, socketCliente);
-                // if (mensaje.Equals("Exit", StringComparison.InvariantCultureIgnoreCase))
-                // {
-                //     parar = true;
-                // }
-                // else
-                // {
-                    // try
-                    // {
-                    //     Response response = SendMessage(mensaje, socketCliente);
-                    //     //Logica con la response
-                    // }
-                    // catch (Exception ex)
-                    // {
-                    //     Console.WriteLine("Servidor desconectado");
-                    //     parar = true;
-                    // }
+                if (mensaje.Equals("3"))
+                {
+                    parar = true;
+                }
+                else
+                {
+                    ExecuteMainAction(mensaje, socketCliente);
+                }
             }
             Console.WriteLine("Cierro el Cliente");
             socketCliente.Shutdown(SocketShutdown.Both);
             socketCliente.Close();
-
         }
 
-        public static Response SendMessage(int command, string mensaje, Socket socketCliente){
+        // Seccion de mensajes
+        public static void SendMessage(int command, string mensaje, Socket socketCliente){
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
@@ -114,73 +106,9 @@ namespace AppCliente
                 }
                 offset += enviados;
             }
-
-            RecibirMensaje(socketCliente);
-            // // El cliente recibe la respuesta
-            // byte[] datarespuestaLength = new byte[Constantes.LargoFijo];
-            // int recibido = socketCliente.Receive(datarespuestaLength);
-            // if (recibido == 0)
-            // {
-            //    throw new SocketException();
-            // }
-
-            // byte[] datarespuesta = new byte[BitConverter.ToInt32(dataLength, 0)];
-            // // en Visual Studio no es necesario el parametro 0, solo con el buffer es suficiente
-            // recibido = socketCliente.Receive(datarespuesta);
-            // if (recibido == 0)
-            // {
-            //    throw new SocketException();
-            // }
-            // string respuesta = Encoding.UTF8.GetString(datarespuesta);
-            // Console.WriteLine("El servidor respondio: {0}", respuesta);
-            return new Response() { Mensaje = "OK", Error = false };
         }
 
-        public static void ShowMenu(){
-            Console.WriteLine("Menu");
-            Console.WriteLine("1. Login");
-            Console.WriteLine("2. Registrarse");
-            Console.WriteLine("3. Logout");
-        }
-
-        public static void ExecuteAction(string mensaje, Socket socketCliente){
-            string user;
-            string password;
-            string message;
-            switch (mensaje)
-            {
-                case "1":
-                    Console.WriteLine("Ingrese su usuario");
-                    user = Console.ReadLine();
-                    Console.WriteLine("Ingrese su contraseña");
-                    password = Console.ReadLine();
-                    message = $"{user}|{password}";
-                    SendMessage(Constantes.Login, message, socketCliente);
-                    break;
-                case "2":
-                    Console.WriteLine("Ingrese nuevo nombre de usuario");
-                    user = Console.ReadLine();
-                    Console.WriteLine("Ingrese contraseña");
-                    password = Console.ReadLine();
-                    message = $"{user}|{password}";
-                    SendMessage(Constantes.Registrarse, message, socketCliente);
-                    break;
-                case "3":
-                    Console.WriteLine("Ingrese usuario a salir");
-                    user = Console.ReadLine();
-                    Console.WriteLine("Ingrese contraseña");
-                    password = Console.ReadLine();
-                    message = $"{user}|{password}";
-                    SendMessage(Constantes.Logout, message, socketCliente);
-                    break;
-                    break;
-                default:
-                    Console.WriteLine("Opcion incorrecta");
-                    break;
-            }
-        }
-
-        public static void RecibirMensaje(Socket socketCliente)
+        public static string[] RecibirMensaje(Socket socketCliente)
         {
             //Primero recibo el Header del mensaje
             int offset = 0;
@@ -226,7 +154,6 @@ namespace AppCliente
 
             // Ahora recibo el mensaje 
             byte[] data = new byte[BitConverter.ToInt32(dataLength, 0)];
-            // en Visual Studio no es necesario el parametro 0, solo con el buffer es suficiente
             offset = 0;
             size = BitConverter.ToInt32(dataLength, 0);
             while (offset < size)
@@ -242,8 +169,120 @@ namespace AppCliente
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
             Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            return new string[] { Header, comando, mensaje };
+        }
+
+        // Seccion Alta de usuario
+        public static void ShowMainMenu(){
+            Console.WriteLine("Menu");
+            Console.WriteLine("1. Login");
+            Console.WriteLine("2. Registrarse");
+            Console.WriteLine("3. Logout");
+        }
+
+        public static void ExecuteMainAction(string mensaje, Socket socketCliente){
+            string user;
+            string password;
+            string message;
+            string[] response = new string[3];
+            switch (mensaje)
+            {
+                case "1":
+                    Console.WriteLine("Ingrese su usuario");
+                    user = Console.ReadLine();
+                    Console.WriteLine("Ingrese su contraseña");
+                    password = Console.ReadLine();
+                    message = $"{user}|{password}";
+                    SendMessage(Constantes.Login, message, socketCliente);
+                    response = RecibirMensaje(socketCliente);
+                    TryLogin(response);
+                    break;
+                case "2":
+                    Console.WriteLine("Ingrese nuevo nombre de usuario");
+                    user = Console.ReadLine();
+                    Console.WriteLine("Ingrese contraseña");
+                    password = Console.ReadLine();
+                    message = $"{user}|{password}";
+                    SendMessage(Constantes.Registrarse, message, socketCliente);
+                    response = RecibirMensaje(socketCliente);
+                    break;
+                default:
+                    Console.WriteLine("Opcion incorrecta");
+                    break;
+            }
+        }
+
+        public static void TryLogin(string[] response){
+            if(response[1].Equals(Constantes.RespuestaLoginExistoso.ToString())){
+                string[] data = response[2].Split('|');
+                int id = int.Parse(data[0]);
+                string username = data[1];
+                _sistema.Usuario = new User(id, username);
+                Console.WriteLine("Login exitoso, bienvenido {0}", username);
+                EnterLoggedInStatus();
+            } else {
+                Console.WriteLine("Login fallido");
+            }
+        }
+
+        // Seccion de funcionalidades
+
+        public static void EnterLoggedInStatus(){
+            bool loggedIn = true;
+            while(loggedIn){
+                ShowLoggedInMenu();
+                string option = Console.ReadLine();
+                if (option.Equals("7", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    _sistema.Usuario = null;
+                    loggedIn = false;
+                }
+                else
+                {
+                    ExecuteLoggedInAction(option);
+                }
+            }
+        }
+        public static void ShowLoggedInMenu(){
+            Console.WriteLine("Menu");
+            Console.WriteLine("1. Alta perfil de trabajo");
+            Console.WriteLine("2. Asociar foto al perfil de trabajo");
+            Console.WriteLine("3. Listar perfiles de trabajo");
+            Console.WriteLine("4. Consultar perfil especifico");
+            Console.WriteLine("5. Enviar mensaje");
+            Console.WriteLine("6. Listar mensajes");
+            Console.WriteLine("7. Cerrar sesion");
+            // Console.WriteLine("8. Cambiar Puerto????");
+        }
+
+        public static void ExecuteLoggedInAction(string option){
+            switch (option)
+            {
+                case "1":
+                    Console.WriteLine("AltaPerfilTrabajo()");
+                    break;
+                case "2":
+                    Console.WriteLine("AsociarFotoPerfilTrabajo()");
+                    break;
+                case "3":
+                    Console.WriteLine("ListarPerfilesTrabajo()");
+                    break;
+                case "4":
+                    Console.WriteLine("ConsultarPerfilEspecifico()");
+                    break;
+                case "5":
+                    Console.WriteLine("EnviarMensaje()");
+                    break;
+                case "6":
+                    Console.WriteLine("ListarMensajes()");
+                    break;
+                case "7":
+                    Console.WriteLine("CerrarSesion()");
+                    break;
+                default:
+                    Console.WriteLine("Opcion incorrecta");
+                    break;
+            }
         }
     }
 }
-
-

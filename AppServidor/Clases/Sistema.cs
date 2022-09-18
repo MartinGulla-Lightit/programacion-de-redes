@@ -1,4 +1,4 @@
-namespace AppServidor.Classes
+namespace AppServidor.Clases
 {
     public class Sistema
     {
@@ -19,8 +19,8 @@ namespace AppServidor.Classes
             }
             else
             {
-                Usuarios.Add(new User(username, password));
-                return LoginUser(username, password);
+                Usuarios.Add(new User(username, password, Usuarios.Count));
+                return "Registro exitoso!";
             }
         }
 
@@ -50,11 +50,10 @@ namespace AppServidor.Classes
 
         public string LoginUser(string username, string password)
         {
-            var user = Usuarios.FirstOrDefault(u => u.Username == username && u.Password == password);
-            if (user != null && !user.IsLogged)
+            var user = Usuarios.FirstOrDefault(u => u.Username.Equals(username) && u.Password.Equals(password));
+            if (user != null)
             {
-                user.IsLogged = true;
-                return $"Bienvenido {user.Username}";
+                return $"{user.Id}|{user.Username}";
             }
             else
             {
