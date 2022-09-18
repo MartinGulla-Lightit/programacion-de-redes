@@ -221,6 +221,9 @@ namespace AppServidor
                     case "4":
                         CrearPerfilDeTrabajo(mensaje, socketCliente);
                         break;
+                    case "5":
+                        ListarPerfilesDeTrabajoFiltrados(mensaje, socketCliente);
+                        break;
                     default:
                         break;
                 }
@@ -263,6 +266,17 @@ namespace AppServidor
             string[] habilidades = datos[2].Split('#');
             string respuesta = _sistema.CrearPerfilDeTrabajo(usuarioId, descripcion, habilidades);
             int command = respuesta.Length > 0 ? Constantes.RespuestaAltaPerfilTrabajoExistoso : Constantes.RespuestaAltaPerfilTrabajoFallido;
+            SendMessage(command, respuesta, socketCliente);
+        }
+
+        public static void ListarPerfilesDeTrabajoFiltrados(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            string filtro = datos[0];
+            string datoDelFiltro = datos[1];
+            string respuesta = _sistema.ListarPerfilesDeTrabajoFiltrados(filtro, datoDelFiltro);
+            Console.WriteLine("Respuesta: {0}", respuesta);
+            int command = respuesta.Length > 0 ? Constantes.RespuestaListarPerfilesTrabajoExitoso : Constantes.RespuestaListarPerfilesTrabajoFallido;
             SendMessage(command, respuesta, socketCliente);
         }
     }

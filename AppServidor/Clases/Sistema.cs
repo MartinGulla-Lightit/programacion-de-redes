@@ -84,5 +84,22 @@ namespace AppServidor.Clases
             }
             return "";
         }
+
+        public string ListarPerfilesDeTrabajoFiltrados(string filtro, string datoDelFiltro){
+            var perfiles = Usuarios.Where(u => u.descripcion != null);
+            if (filtro.Equals("1")){
+                perfiles = perfiles.Where(u => u.Username.Contains(datoDelFiltro));
+            }
+            else if (filtro.Equals("2")){
+                perfiles = perfiles.Where(u => u.descripcion.Contains(datoDelFiltro));
+            }
+            else if (filtro.Equals("3")){
+                perfiles = perfiles.Where(u => u.habilidades.Contains(datoDelFiltro));
+            }
+            else if (!filtro.Equals("4")){
+                return "";
+            }
+            return string.Join("|", perfiles.Select(u => $"{u.Id}#{u.Username}#{u.descripcion}#{string.Join(", ", (u.habilidades))}"));
+        }
     }
 }

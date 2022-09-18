@@ -265,7 +265,7 @@ namespace AppCliente
                     Console.WriteLine("AsociarFotoPerfilTrabajo()");
                     break;
                 case "3":
-                    Console.WriteLine("ListarPerfilesTrabajo()");
+                    ListarPerfilesTrabajo(socketCliente);
                     break;
                 case "4":
                     Console.WriteLine("ConsultarPerfilEspecifico()");
@@ -312,6 +312,44 @@ namespace AppCliente
                 Console.WriteLine("Alta de perfil de trabajo exitosa");
             } else {
                 Console.WriteLine("Alta de perfil de trabajo fallida");
+            }
+        }
+
+        public static void ListarPerfilesTrabajo(Socket socketCliente){
+            Console.WriteLine("Filtrar por:");
+            Console.WriteLine("1. Nombre");
+            Console.WriteLine("2. Descripcion");
+            Console.WriteLine("3. Habilidades");
+            Console.WriteLine("4. Ninguno");
+            string filtro = Console.ReadLine();
+            string valor;
+            if (!filtro.Equals("4", StringComparison.InvariantCultureIgnoreCase))
+            {
+                Console.WriteLine("Ingrese el valor del filtro");
+                valor = Console.ReadLine();
+            }
+            string message = $"{filtro}|{valor}";
+            SendMessage(Constantes.ListarPerfilesTrabajo, message, socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[1].Equals(Constantes.RespuestaListarPerfilesTrabajoExitoso.ToString())){
+                Console.WriteLine("Perfiles encontrados:");
+                string[] perfiles = response[2].Split('|');
+                foreach (string perfil in perfiles)
+                {
+                    string[] data = perfil.Split('#');
+                    int id = int.Parse(data[0]);
+                    string username = data[1];
+                    string descripcion = data[2];
+                    string habilidades = data[3];
+                    Console.WriteLine("<====== Inicio de perfil ======>");
+                    Console.WriteLine("Id: {0}", id);
+                    Console.WriteLine("Nombre: {0}", username);
+                    Console.WriteLine("Descripcion: {0}", descripcion);
+                    Console.WriteLine("Habilidades: {0}", habilidades);
+                    Console.WriteLine("<======= Fin del perfil =======>");
+                }
+            } else {
+                Console.WriteLine("Listar perfiles de trabajo fallido");
             }
         }
     }
