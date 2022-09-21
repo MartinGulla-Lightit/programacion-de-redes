@@ -25,5 +25,14 @@ public static class Constantes
     public const int ConsultarPerfilEspecifico = 6;
     public const int RespuestaConsultarPerfilEspecificoExitoso = 6;
     public const int RespuestaConsultarPerfilEspecificoFallido = 0;
+    public const int EnviarMensaje = 7;
+    public const int RespuestaEnviarMensajeExitoso = 7;
+    public const int RespuestaEnviarMensajeFallido = 0;
+    public const int ListarMensajes = 8;
+    public const int RespuestaListarMensajesExitoso = 8;
+    public const int RespuestaListarMensajesFallido = 0;
+    public const int ListarMeensajesNoLeidos = 9;
+    public const int RespuestaListarMensajesNoLeidosExitoso = 9;
+    public const int RespuestaListarMensajesNoLeidosFallido = 0;
     
 }
