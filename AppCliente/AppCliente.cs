@@ -13,6 +13,8 @@ namespace AppCliente
         private static Sistema _sistema = new Sistema();
         public static void Main(string[] args)
         {
+            Console.ForegroundColor
+            = ConsoleColor.Gray;
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
 
             var socketCliente = new Socket(
@@ -31,7 +33,7 @@ namespace AppCliente
             {
                 ShowMainMenu();
 
-                String mensaje = Console.ReadLine();
+                String mensaje = ReadLine("Blue");
 
                 if (mensaje.Equals("3"))
                 {
@@ -46,6 +48,23 @@ namespace AppCliente
             socketCliente.Shutdown(SocketShutdown.Both);
             socketCliente.Close();
         }
+
+        public static string ReadLine(string color)
+        {
+            Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), color);
+            string input = Console.ReadLine();
+            Console.ForegroundColor = ConsoleColor.Gray;
+            return input;
+        }
+
+        public static string WriteLine(string text, string color)
+        {
+            Console.ForegroundColor = (ConsoleColor)Enum.Parse(typeof(ConsoleColor), color);
+            Console.WriteLine(text);
+            Console.ForegroundColor = ConsoleColor.Gray;
+            return text;
+        }
+
 
         // Seccion de mensajes
         public static void SendMessage(int command, string mensaje, Socket socketCliente){
@@ -168,7 +187,7 @@ namespace AppCliente
             string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
-            Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            // Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
             return new string[] { Header, comando, mensaje };
         }
 
@@ -189,9 +208,9 @@ namespace AppCliente
             {
                 case "1":
                     Console.WriteLine("Ingrese su usuario");
-                    user = Console.ReadLine();
+                    user = ReadLine("Blue");
                     Console.WriteLine("Ingrese su contraseña");
-                    password = Console.ReadLine();
+                    password = ReadLine("Blue");
                     message = $"{user}|{password}";
                     SendMessage(Constantes.Login, message, socketCliente);
                     response = RecibirMensaje(socketCliente);
@@ -199,15 +218,15 @@ namespace AppCliente
                     break;
                 case "2":
                     Console.WriteLine("Ingrese nuevo nombre de usuario");
-                    user = Console.ReadLine();
+                    user = ReadLine("Blue");
                     Console.WriteLine("Ingrese contraseña");
-                    password = Console.ReadLine();
+                    password = ReadLine("Blue");
                     message = $"{user}|{password}";
                     SendMessage(Constantes.Registrarse, message, socketCliente);
                     response = RecibirMensaje(socketCliente);
                     break;
                 default:
-                    Console.WriteLine("Opcion incorrecta");
+                    WriteLine("Opcion incorrecta", "Red");
                     break;
             }
         }
@@ -221,7 +240,7 @@ namespace AppCliente
                 Console.WriteLine("Login exitoso, bienvenido {0}", username);
                 EnterLoggedInStatus(socketCliente);
             } else {
-                Console.WriteLine("Login fallido");
+                WriteLine(response[2], "Red");
             }
         }
 
@@ -231,7 +250,7 @@ namespace AppCliente
             bool loggedIn = true;
             while(loggedIn){
                 ShowLoggedInMenu();
-                string option = Console.ReadLine();
+                string option = ReadLine("Blue");
                 if (option.Equals("7", StringComparison.InvariantCultureIgnoreCase))
                 {
                     _sistema.Usuario = null;
@@ -271,33 +290,95 @@ namespace AppCliente
                     ConsultarPerfilEspecifico(socketCliente);
                     break;
                 case "5":
-                    Console.WriteLine("EnviarMensaje()");
+                    EnviarMensaje(socketCliente);
                     break;
                 case "6":
-                    Console.WriteLine("ListarMensajes()");
+                    ListarMensajes(socketCliente);
                     break;
                 case "7":
                     Console.WriteLine("CerrarSesion()");
                     break;
                 default:
-                    Console.WriteLine("Opcion incorrecta");
+                    WriteLine("Opcion incorrecta", "Red");
                     break;
+            }
+        }
+
+        public static void EnviarMensaje(Socket socketCliente){
+            Console.WriteLine("Ingrese el nombre de usuario al que desea enviar el mensaje");
+            string nombreUsuario = ReadLine("Blue");
+            Console.WriteLine("Ingrese el mensaje");
+            string mensaje = ReadLine("Blue");
+            string message = $"{_sistema.Usuario.Id}|{nombreUsuario}|{mensaje}";
+            SendMessage(Constantes.EnviarMensaje, message, socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[1].Equals(Constantes.RespuestaEnviarMensajeExitoso.ToString())){
+                Console.WriteLine("Mensaje enviado");
+            } else {
+                WriteLine("Error al enviar mensaje: Verifique que el usuario exista", "Red");
+            }
+        }
+
+        public static void ListarMensajes(Socket socketCliente){
+            bool error = ListarMensajesNoLeidos(socketCliente);
+            if(!error){
+                ListarMensajesDeUsuarioEspecifico(socketCliente);
+            }
+        }
+
+        public static void ListarMensajesDeUsuarioEspecifico(Socket socketCliente){
+            Console.WriteLine("Ingrese el nombre de usuario del cual desea ver los mensajes");
+            string nombreUsuario = ReadLine("Blue");
+            string message = $"{_sistema.Usuario.Id}|{nombreUsuario}";
+            SendMessage(Constantes.ListarMensajes, message, socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[1].Equals(Constantes.RespuestaListarMensajesExitoso.ToString())){
+                string[] mensajes = response[2].Split('|');
+                foreach (string mensaje in mensajes)
+                {
+                    WriteLine(mensaje, "DarkYellow");
+                }
+            } else {
+                WriteLine(response[2], "Red");
+            }
+        }
+
+        public static bool ListarMensajesNoLeidos(Socket socketCliente){
+            string message = $"{_sistema.Usuario.Id}";
+            SendMessage(Constantes.ListarMeensajesNoLeidos, message, socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[1].Equals(Constantes.RespuestaListarMensajesNoLeidosExitoso.ToString())){
+                if(response[2].Equals("")){
+                    Console.WriteLine("No tiene mensajes no leidos");
+                } else {
+                     Console.WriteLine("Mensajes no leidos:");
+                    string[] mensajes = response[2].Split('|');
+                    foreach (string mensaje in mensajes)
+                    {
+                        string[] UserNameCantidad = mensaje.Split('#');
+                        WriteLine($"De: {UserNameCantidad[0]} - Cantidad sin leer: {UserNameCantidad[1]}", "DarkYellow");
+                    }
+                }
+                return false;
+            } else {
+                WriteLine(response[2], "Red");
+                return true;
             }
         }
 
         public static void AltaPerfilTrabajo(Socket socketCliente)
         {
             Console.WriteLine("Ingrese descripcion del perfil");
-            string descripcion = Console.ReadLine();
+            string descripcion = ReadLine("Blue");
             List<string> listaHabilidades = new List<string>();
             bool continuar = true;
             while (continuar)
             {
                 Console.WriteLine("Ingrese habilidad");
-                string habilidad = Console.ReadLine();
+                string habilidad = ReadLine("Blue");
                 listaHabilidades.Add(habilidad);
                 Console.WriteLine("Desea agregar otra habilidad? (s/n)");
-                string respuesta = Console.ReadLine();
+                string respuesta = ReadLine("Blue");
                 if (respuesta.Equals("n", StringComparison.InvariantCultureIgnoreCase))
                 {
                     continuar = false;
@@ -311,7 +392,7 @@ namespace AppCliente
             if(response[1].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
                 Console.WriteLine("Alta de perfil de trabajo exitosa");
             } else {
-                Console.WriteLine("Alta de perfil de trabajo fallida");
+                WriteLine("Alta de perfil de trabajo fallida", "Red");
             }
         }
 
@@ -321,12 +402,12 @@ namespace AppCliente
             Console.WriteLine("2. Descripcion");
             Console.WriteLine("3. Habilidades");
             Console.WriteLine("4. Ninguno");
-            string filtro = Console.ReadLine();
+            string filtro = ReadLine("Blue");
             string valor = "";
             if (!filtro.Equals("4", StringComparison.InvariantCultureIgnoreCase))
             {
                 Console.WriteLine("Ingrese el valor del filtro");
-                valor = Console.ReadLine();
+                valor = ReadLine("Blue");
             }
             string message = $"{filtro}|{valor}";
             SendMessage(Constantes.ListarPerfilesTrabajo, message, socketCliente);
@@ -341,21 +422,21 @@ namespace AppCliente
                     string username = data[1];
                     string descripcion = data[2];
                     string habilidades = data[3];
-                    Console.WriteLine("<====== Inicio de perfil ======>");
-                    Console.WriteLine("Id: {0}", id);
-                    Console.WriteLine("Nombre: {0}", username);
-                    Console.WriteLine("Descripcion: {0}", descripcion);
-                    Console.WriteLine("Habilidades: {0}", habilidades);
-                    Console.WriteLine("<======= Fin del perfil =======>");
+                    WriteLine("<====== Inicio de perfil ======>", "DarkYellow");
+                    WriteLine($"Id: {id}", "DarkYellow");
+                    WriteLine($"Nombre: {username}", "DarkYellow");
+                    WriteLine($"Descripcion: {descripcion}", "DarkYellow");
+                    WriteLine($"Habilidades: {habilidades}", "DarkYellow");
+                    WriteLine("<======= Fin del perfil =======>", "DarkYellow");
                 }
             } else {
-                Console.WriteLine("Listar perfiles de trabajo fallido, puede que no haya perfiles de trabajo con los filtros aplicados");
+                WriteLine("Listar perfiles de trabajo fallido, puede que no haya perfiles de trabajo con los filtros aplicados", "Red");
             }
         }
 
         public static void ConsultarPerfilEspecifico(Socket socketCliente){
             Console.WriteLine("Ingrese el id del perfil");
-            string id = Console.ReadLine();
+            string id = ReadLine("Blue");
             string message = $"{id}";
             SendMessage(Constantes.ConsultarPerfilEspecifico, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
@@ -366,14 +447,14 @@ namespace AppCliente
                 string username = data[1];
                 string descripcion = data[2];
                 string habilidades = data[3];
-                Console.WriteLine("<====== Inicio de perfil ======>");
-                Console.WriteLine("Id: {0}", idPerfil);
-                Console.WriteLine("Nombre: {0}", username);
-                Console.WriteLine("Descripcion: {0}", descripcion);
-                Console.WriteLine("Habilidades: {0}", habilidades);
-                Console.WriteLine("<======= Fin del perfil =======>");
+                WriteLine("<====== Inicio de perfil ======>", "DarkYellow");
+                WriteLine($"Id: {idPerfil}", "DarkYellow");
+                WriteLine($"Nombre: {username}", "DarkYellow");
+                WriteLine($"Descripcion: {descripcion}", "DarkYellow");
+                WriteLine($"Habilidades: {habilidades}", "DarkYellow");
+                WriteLine("<======= Fin del perfil =======>", "DarkYellow");
             } else {
-                Console.WriteLine("Consultar perfil especifico fallido, puede que no exista el usuario, o no haya dado de alta su perfil de trabajo");
+                WriteLine("Consultar perfil especifico fallido, puede que no exista el usuario, o no haya dado de alta su perfil de trabajo", "Red");
             }
         }
     }

@@ -9,6 +9,8 @@ namespace AppServidor.Clases
         {
             Usuarios = new List<User>();
             Mensajes = new List<Mensaje>();
+            Usuarios.Add(new User("admin", "admin", 1));
+            Usuarios.Add(new User("user", "user", 2));
         }
 
         public string RegistrarUser(string username, string password)
@@ -19,7 +21,7 @@ namespace AppServidor.Clases
             }
             else
             {
-                Usuarios.Add(new User(username, password, Usuarios.Count));
+                Usuarios.Add(new User(username, password, Usuarios.Count+1));
                 return "Registro exitoso!";
             }
         }
@@ -29,23 +31,60 @@ namespace AppServidor.Clases
             return Usuarios.FirstOrDefault(u => u.Id == id);
         }
 
-        public void AgregarMensajeAAmbosUsuarios(Mensaje mensaje)
+        public User BuscarUsuarioUserName(string username)
         {
-            var user1 = BuscarUsuario(mensaje.Sender);
-            var user2 = BuscarUsuario(mensaje.Receiver);
-            user1.AddMensaje(mensaje);
-            user2.AddMensaje(mensaje);
+            return Usuarios.FirstOrDefault(u => u.Username == username);
         }
 
-        public void ImprimirMensajes(int id)
+        public void AgregarMensaje(Mensaje mensaje)
         {
-            var user = BuscarUsuario(id);
-            foreach (var mensaje in user.Mensajes)
+            Mensajes.Add(mensaje);
+        }
+
+        public List<Mensaje> DevolverMensajesEntreUsuarios(int sender, int receiver)
+        {
+            var mensajes = Mensajes.Where(m => m.Sender == sender && m.Receiver == receiver).ToList();
+            var mensajes2 = Mensajes.Where(m => m.Sender == receiver && m.Receiver == sender).ToList();
+            mensajes.AddRange(mensajes2);
+            mensajes = mensajes.OrderBy(m => m.Creado).ToList();
+            return mensajes;
+        }
+
+        public string DevolverStringConMensajesEntreUsuarios(int sender, int receiver)
+        {
+            var mensajes = DevolverMensajesEntreUsuarios(sender, receiver);
+            var stringMensajes = "";
+            foreach (var mensaje in mensajes)
             {
-                User userSender = BuscarUsuario(mensaje.Sender);
-                User userReceiver = BuscarUsuario(mensaje.Receiver);
-                Console.WriteLine($"De: {userSender.Username} Para: {userReceiver.Username} Mensaje: {mensaje.Message}");
+                if(mensaje.Read == false && mensaje.Receiver == sender)
+                {
+                    stringMensajes += $"==> De: {BuscarUsuario(mensaje.Sender).Username} Para: {BuscarUsuario(mensaje.Receiver).Username} Mensaje: {mensaje.Message}";
+                    mensaje.Read = true;
+                } else {
+                    stringMensajes += $"=== De: {BuscarUsuario(mensaje.Sender).Username} Para: {BuscarUsuario(mensaje.Receiver).Username} Mensaje: {mensaje.Message}";
+                }
+                stringMensajes += "|";
             }
+            return stringMensajes;
+        }
+
+        public List<string> DevolverUserNameYCantidadMensajesSinLeer(int id)
+        {
+            var usuarios = Usuarios.Where(u => u.Id != id).ToList();
+            var lista = new List<string>();
+            foreach (var usuario in usuarios)
+            {
+                var cantidad = Mensajes.Count(m => m.Receiver == id && m.Sender == usuario.Id && m.Read == false);
+                if (cantidad > 0)
+                {
+                    lista.Add($"{usuario.Username}#{cantidad}");
+                }
+            }
+            if (lista.Count > 1)
+            {
+                lista = lista.OrderByDescending(l => int.Parse(l.Split('#')[1])).ToList();
+            }
+            return lista;
         }
 
         public string LoginUser(string username, string password)

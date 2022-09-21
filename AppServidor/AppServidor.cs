@@ -137,7 +137,7 @@ namespace AppServidor
             string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
-            Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            // Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
             DecidirRespuesta(Header, comando, mensaje, socketCliente);
 
             // SendMessage(Constantes.RespuestaLoginExistoso, "Login existoso", socketCliente);
@@ -227,11 +227,78 @@ namespace AppServidor
                     case "6":
                         ConsultarPerfilEspecifico(mensaje, socketCliente);
                         break;
+                    case "7":
+                        CrearMensaje(mensaje, socketCliente);
+                        break;
+                    case "8":
+                        ConsultarMensajeEspecifico(mensaje, socketCliente);
+                        break;
+                    case "9":
+                        ListarMensajesNoLeidos(mensaje, socketCliente);
+                        break;
                     default:
                         break;
                 }
             }
         }
+
+        public static void ConsultarMensajeEspecifico(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            int Sender = Convert.ToInt32(datos[0]);
+            int Receiver = _sistema.BuscarUsuarioUserName(datos[1]) !=null ? _sistema.BuscarUsuarioUserName(datos[1]).Id : 0;
+            if(Receiver == 0)
+            {
+                SendMessage(Constantes.RespuestaListarMensajesFallido, "El usuario no existe", socketCliente);
+            }
+            else
+            {
+                string respuesta = _sistema.DevolverStringConMensajesEntreUsuarios(Sender, Receiver);
+                if(respuesta == null)
+                {
+                    SendMessage(Constantes.RespuestaListarMensajesFallido, "No hay mensajes con el usuario", socketCliente);
+                }
+                else
+                {
+                    SendMessage(Constantes.RespuestaListarMensajesExitoso, respuesta, socketCliente);
+                }
+            }
+
+        }
+
+        public static void ListarMensajesNoLeidos(string mensaje, Socket socketCliente)
+        {
+            int id = Convert.ToInt32(mensaje);
+            List<string> userNameYCantidadMensajesSinLeer = _sistema.DevolverUserNameYCantidadMensajesSinLeer(id);
+            string respuesta = string.Join("|", userNameYCantidadMensajesSinLeer);
+            SendMessage(Constantes.RespuestaListarMensajesNoLeidosExitoso, respuesta, socketCliente);
+            // if (userNameYCantidadMensajesSinLeer.Count != 0)
+            // {
+                
+            // }
+            // else
+            // {
+            //     SendMessage(Constantes.RespuestaListarMensajesNoLeidosFallido, "No hay mensajes sin leer", socketCliente);
+            // }
+        }
+
+        public static void CrearMensaje(string mensaje, Socket socketCliente)
+        {
+            string[] datos = mensaje.Split('|');
+            int Sender = Convert.ToInt32(datos[0]);
+            int Receiver = _sistema.BuscarUsuarioUserName(datos[1]).Id;
+            if(Receiver == 0)
+            {
+                SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", socketCliente);
+            }
+            else
+            {
+                string Texto = datos[2];
+                Mensaje mensajeNuevo = new Mensaje(Sender, Receiver, Texto);
+                _sistema.AgregarMensaje(mensajeNuevo);
+                SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", socketCliente);
+            }
+        } 
 
         public static void Login(string mensaje, Socket socketCliente)
         {
