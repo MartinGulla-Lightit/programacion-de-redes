@@ -88,7 +88,7 @@ namespace AppCliente
             // Mando el comando
             offset = 0;
             size = Constantes.Command;
-            string dataCommand = command.ToString();
+            string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
             while (offset < size) 
             {
@@ -145,8 +145,8 @@ namespace AppCliente
 
             // Recibo el comando
             offset = 0;
-            size = 1;
-            byte[] dataCommand = new byte[1];
+            size = Constantes.Command;
+            byte[] dataCommand = new byte[size];
             while (offset < size)
             {
                 int recibidos = socketCliente.Receive(dataCommand, offset, size - offset, SocketFlags.None);
@@ -187,7 +187,10 @@ namespace AppCliente
             string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
-            // Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            if (comando[0] == '0')
+            {
+                comando = comando.Remove(0, 1);
+            }
             return new string[] { Header, comando, mensaje };
         }
 
@@ -271,7 +274,6 @@ namespace AppCliente
             Console.WriteLine("5. Enviar mensaje");
             Console.WriteLine("6. Listar mensajes");
             Console.WriteLine("7. Cerrar sesion");
-            // Console.WriteLine("8. Cambiar Puerto????");
         }
 
         public static void ExecuteLoggedInAction(string option, Socket socketCliente){

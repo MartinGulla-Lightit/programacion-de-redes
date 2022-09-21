@@ -53,20 +53,7 @@ namespace AppServidor
                 bool clienteConectado = true;
                 while (clienteConectado)
                 {
-
                     RecibirMensaje(socketCliente);
-
-
-                    //// Envio una respuesta al cliente
-                    //string respuesta = "OK";
-                    //byte[] datarespuesta = Encoding.UTF8.GetBytes(respuesta);
-                    //byte[] datarespuestaLength = BitConverter.GetBytes(data.Length);
-                    //// Mando primero el tamaño
-                    //socketCliente.Send(dataLength);
-                    //// Mando el mensaje
-                    //socketCliente.Send(datarespuesta);
-
-
                 }
                 Console.WriteLine("Cliente Desconectado");
             }
@@ -94,8 +81,8 @@ namespace AppServidor
 
             // Recibo el comando
             offset = 0;
-            size = 1;
-            byte[] dataCommand = new byte[1];
+            size = Constantes.Command;
+            byte[] dataCommand = new byte[size];
             while (offset < size)
             {
                 int recibidos = socketCliente.Receive(dataCommand, offset, size - offset, SocketFlags.None);
@@ -137,10 +124,11 @@ namespace AppServidor
             string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
-            // Console.WriteLine("Header: {0} Comando: {1} Mensaje: {2}", Header, comando, mensaje);
+            if (comando[0] == '0')
+            {
+                comando = comando.Remove(0, 1);
+            }
             DecidirRespuesta(Header, comando, mensaje, socketCliente);
-
-            // SendMessage(Constantes.RespuestaLoginExistoso, "Login existoso", socketCliente);
         }
 
         public static void SendMessage(int command, string mensaje, Socket socketCliente){
@@ -164,7 +152,7 @@ namespace AppServidor
             // Mando el comando
             offset = 0;
             size = Constantes.Command;
-            string dataCommand = command.ToString();
+            string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
             while (offset < size) 
             {
@@ -272,14 +260,6 @@ namespace AppServidor
             List<string> userNameYCantidadMensajesSinLeer = _sistema.DevolverUserNameYCantidadMensajesSinLeer(id);
             string respuesta = string.Join("|", userNameYCantidadMensajesSinLeer);
             SendMessage(Constantes.RespuestaListarMensajesNoLeidosExitoso, respuesta, socketCliente);
-            // if (userNameYCantidadMensajesSinLeer.Count != 0)
-            // {
-                
-            // }
-            // else
-            // {
-            //     SendMessage(Constantes.RespuestaListarMensajesNoLeidosFallido, "No hay mensajes sin leer", socketCliente);
-            // }
         }
 
         public static void CrearMensaje(string mensaje, Socket socketCliente)
