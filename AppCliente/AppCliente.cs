@@ -61,6 +61,7 @@ namespace AppCliente
             catch (Exception ex)
             {
                 Console.WriteLine("Intentando reconectar al servidor...!!!");
+                System.Threading.Thread.Sleep(2000);
                 IniciarCliente();
             }
         }
