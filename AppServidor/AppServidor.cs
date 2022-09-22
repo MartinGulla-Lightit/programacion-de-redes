@@ -5,6 +5,7 @@ using System.Threading;
 using System.Text;
 using Protocolo;
 using AppServidor.Clases;
+using Communication;
 
 
 namespace AppServidor
@@ -12,6 +13,7 @@ namespace AppServidor
     class MainClass
     {
         private static Sistema _sistema = new Sistema();
+        static readonly SettingsManager settingsMngr = new SettingsManager();
 
         public static void Main(string[] args)
         {
@@ -22,8 +24,11 @@ namespace AppServidor
                 SocketType.Stream,
                 ProtocolType.Tcp);
 
+            string ipServer = settingsMngr.ReadSettings(ServerConfig.serverIPconfigkey);
+            int ipPort = int.Parse(settingsMngr.ReadSettings(ServerConfig.serverPortconfigkey));
+
             // localhost, puerto 5000
-            var localEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
+            var localEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), ipPort);
 
             socketServer.Bind(localEndpoint);
             socketServer.Listen(0);
@@ -65,23 +70,9 @@ namespace AppServidor
 
         public static void RecibirMensaje(Socket socketCliente)
         {
-            //Primero recibo el Header del mensaje
-            int offset = 0;
-            int size = Constantes.Header;
-            byte[] dataHeader = new byte[size];
-            while (offset < size)
-            {
-                int recibidos = socketCliente.Receive(dataHeader, offset, size - offset, SocketFlags.None);
-                if (recibidos == 0)
-                {
-                    throw new SocketException();
-                }
-                offset += recibidos;
-            }
-
             // Recibo el comando
-            offset = 0;
-            size = Constantes.Command;
+            int offset = 0;
+            int size = Constantes.Command;
             byte[] dataCommand = new byte[size];
             while (offset < size)
             {
@@ -121,37 +112,22 @@ namespace AppServidor
                 }
                 offset += recibidos;
             }
-            string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
             if (comando[0] == '0')
             {
                 comando = comando.Remove(0, 1);
             }
-            DecidirRespuesta(Header, comando, mensaje, socketCliente);
+            DecidirRespuesta(comando, mensaje, socketCliente);
         }
 
         public static void SendMessage(int command, string mensaje, Socket socketCliente){
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
-            // Mando primero el Header
-            int offset = 0;
-            int size = Constantes.Header;
-            byte[] dataHeader = Encoding.UTF8.GetBytes("RES");
-            while (offset < size) 
-            {
-                int enviados = socketCliente.Send(dataHeader, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
-                {
-                    throw new SocketException();   
-                }
-                offset += enviados;
-            }
-
             // Mando el comando
-            offset = 0;
-            size = Constantes.Command;
+            int offset = 0;
+            int size = Constantes.Command;
             string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
             while (offset < size) 
@@ -191,42 +167,39 @@ namespace AppServidor
             }
         }
 
-        public static void DecidirRespuesta(string Header, string comando, string mensaje, Socket socketCliente)
+        public static void DecidirRespuesta(string comando, string mensaje, Socket socketCliente)
         {
-            if (Header == "REQ")
+            switch (comando)
             {
-                switch (comando)
-                {
-                    case "1":
-                        Login(mensaje, socketCliente);
-                        break;
-                    case "2":
-                        Registrarse(mensaje, socketCliente);
-                        break;
-                    case "3":
-                        Logout(mensaje, socketCliente);
-                        break;
-                    case "4":
-                        CrearPerfilDeTrabajo(mensaje, socketCliente);
-                        break;
-                    case "5":
-                        ListarPerfilesDeTrabajoFiltrados(mensaje, socketCliente);
-                        break;
-                    case "6":
-                        ConsultarPerfilEspecifico(mensaje, socketCliente);
-                        break;
-                    case "7":
-                        CrearMensaje(mensaje, socketCliente);
-                        break;
-                    case "8":
-                        ConsultarMensajeEspecifico(mensaje, socketCliente);
-                        break;
-                    case "9":
-                        ListarMensajesNoLeidos(mensaje, socketCliente);
-                        break;
-                    default:
-                        break;
-                }
+                case "1":
+                    Login(mensaje, socketCliente);
+                    break;
+                case "2":
+                    Registrarse(mensaje, socketCliente);
+                    break;
+                case "3":
+                    Logout(mensaje, socketCliente);
+                    break;
+                case "4":
+                    CrearPerfilDeTrabajo(mensaje, socketCliente);
+                    break;
+                case "5":
+                    ListarPerfilesDeTrabajoFiltrados(mensaje, socketCliente);
+                    break;
+                case "6":
+                    ConsultarPerfilEspecifico(mensaje, socketCliente);
+                    break;
+                case "7":
+                    CrearMensaje(mensaje, socketCliente);
+                    break;
+                case "8":
+                    ConsultarMensajeEspecifico(mensaje, socketCliente);
+                    break;
+                case "9":
+                    ListarMensajesNoLeidos(mensaje, socketCliente);
+                    break;
+                default:
+                    break;
             }
         }
 

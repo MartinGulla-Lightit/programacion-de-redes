@@ -4,49 +4,65 @@ using System.Net;
 using System.Text;
 using Protocolo;
 using AppCliente.Clases;
-
+using Communication;
 
 namespace AppCliente
 {
     class MainClass
     {
         private static Sistema _sistema = new Sistema();
+        static readonly SettingsManager settingsMngr = new SettingsManager();
         public static void Main(string[] args)
         {
             Console.ForegroundColor
             = ConsoleColor.Gray;
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
-
-            var socketCliente = new Socket(
-                AddressFamily.InterNetwork,
-                SocketType.Stream,
-                ProtocolType.Tcp);
-
-            var localEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 0);
-            socketCliente.Bind(localEndPoint);
-            var serverEndpoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 5000);
-            socketCliente.Connect(serverEndpoint);
-            Console.WriteLine("Cliente Conectado al Servidor...!!!");
-
-            bool parar = false;
-            while (!parar)
+            IniciarCliente();
+        }
+        public static void IniciarCliente()
+        {
+            try
             {
-                ShowMainMenu();
+                var socketCliente = new Socket(
+                    AddressFamily.InterNetwork,
+                    SocketType.Stream,
+                    ProtocolType.Tcp);
 
-                String mensaje = ReadLine("Blue");
+                string ipServer = settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey);
+                string ipClient = settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey);
+                int serverPort = int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey));
 
-                if (mensaje.Equals("3"))
+                var localEndPoint = new IPEndPoint(IPAddress.Parse(ipClient), 0);
+                socketCliente.Bind(localEndPoint);
+                var serverEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), serverPort);
+                socketCliente.Connect(serverEndpoint);
+                Console.WriteLine("Cliente Conectado al Servidor...!!!");
+
+                bool parar = false;
+                while (!parar)
                 {
-                    parar = true;
+                    ShowMainMenu();
+
+                    String mensaje = ReadLine("Blue");
+
+                    if (mensaje.Equals("3"))
+                    {
+                        parar = true;
+                    }
+                    else
+                    {
+                        ExecuteMainAction(mensaje, socketCliente);
+                    }
                 }
-                else
-                {
-                    ExecuteMainAction(mensaje, socketCliente);
-                }
+                Console.WriteLine("Cierro el Cliente");
+                socketCliente.Shutdown(SocketShutdown.Both);
+                socketCliente.Close();
             }
-            Console.WriteLine("Cierro el Cliente");
-            socketCliente.Shutdown(SocketShutdown.Both);
-            socketCliente.Close();
+            catch (Exception ex)
+            {
+                Console.WriteLine("Intentando reconectar al servidor...!!!");
+                IniciarCliente();
+            }
         }
 
         public static string ReadLine(string color)
@@ -71,23 +87,9 @@ namespace AppCliente
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
-            // Mando primero el Header
-            int offset = 0;
-            int size = Constantes.Header;
-            byte[] dataHeader = Encoding.UTF8.GetBytes("REQ");
-            while (offset < size) 
-            {
-                int enviados = socketCliente.Send(dataHeader, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
-                {
-                    throw new SocketException();   
-                }
-                offset += enviados;
-            }
-
             // Mando el comando
-            offset = 0;
-            size = Constantes.Command;
+            int offset = 0;
+            int size = Constantes.Command;
             string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
             while (offset < size) 
@@ -129,23 +131,9 @@ namespace AppCliente
 
         public static string[] RecibirMensaje(Socket socketCliente)
         {
-            //Primero recibo el Header del mensaje
-            int offset = 0;
-            int size = Constantes.Header;
-            byte[] dataHeader = new byte[size];
-            while (offset < size)
-            {
-                int recibidos = socketCliente.Receive(dataHeader, offset, size - offset, SocketFlags.None);
-                if (recibidos == 0)
-                {
-                    throw new SocketException();
-                }
-                offset += recibidos;
-            }
-
             // Recibo el comando
-            offset = 0;
-            size = Constantes.Command;
+            int offset = 0;
+            int size = Constantes.Command;
             byte[] dataCommand = new byte[size];
             while (offset < size)
             {
@@ -184,14 +172,13 @@ namespace AppCliente
                 }
                 offset += recibidos;
             }
-            string Header = Encoding.UTF8.GetString(dataHeader);
             string comando = Encoding.UTF8.GetString(dataCommand);
             string mensaje = Encoding.UTF8.GetString(data);
             if (comando[0] == '0')
             {
                 comando = comando.Remove(0, 1);
             }
-            return new string[] { Header, comando, mensaje };
+            return new string[] { comando, mensaje };
         }
 
         // Seccion Alta de usuario
@@ -206,7 +193,7 @@ namespace AppCliente
             string user;
             string password;
             string message;
-            string[] response = new string[3];
+            string[] response = new string[2];
             switch (mensaje)
             {
                 case "1":
@@ -235,15 +222,15 @@ namespace AppCliente
         }
 
         public static void TryLogin(string[] response, Socket socketCliente){
-            if(response[1].Equals(Constantes.RespuestaLoginExistoso.ToString())){
-                string[] data = response[2].Split('|');
+            if(response[0].Equals(Constantes.RespuestaLoginExistoso.ToString())){
+                string[] data = response[1].Split('|');
                 int id = int.Parse(data[0]);
                 string username = data[1];
                 _sistema.Usuario = new User(id, username);
                 Console.WriteLine("Login exitoso, bienvenido {0}", username);
                 EnterLoggedInStatus(socketCliente);
             } else {
-                WriteLine(response[2], "Red");
+                WriteLine(response[1], "Red");
             }
         }
 
@@ -314,7 +301,7 @@ namespace AppCliente
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}|{mensaje}";
             SendMessage(Constantes.EnviarMensaje, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaEnviarMensajeExitoso.ToString())){
+            if(response[0].Equals(Constantes.RespuestaEnviarMensajeExitoso.ToString())){
                 Console.WriteLine("Mensaje enviado");
             } else {
                 WriteLine("Error al enviar mensaje: Verifique que el usuario exista", "Red");
@@ -334,14 +321,14 @@ namespace AppCliente
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}";
             SendMessage(Constantes.ListarMensajes, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaListarMensajesExitoso.ToString())){
-                string[] mensajes = response[2].Split('|');
+            if(response[0].Equals(Constantes.RespuestaListarMensajesExitoso.ToString())){
+                string[] mensajes = response[1].Split('|');
                 foreach (string mensaje in mensajes)
                 {
                     WriteLine(mensaje, "DarkYellow");
                 }
             } else {
-                WriteLine(response[2], "Red");
+                WriteLine(response[1], "Red");
             }
         }
 
@@ -349,12 +336,12 @@ namespace AppCliente
             string message = $"{_sistema.Usuario.Id}";
             SendMessage(Constantes.ListarMeensajesNoLeidos, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaListarMensajesNoLeidosExitoso.ToString())){
-                if(response[2].Equals("")){
+            if(response[0].Equals(Constantes.RespuestaListarMensajesNoLeidosExitoso.ToString())){
+                if(response[1].Equals("")){
                     Console.WriteLine("No tiene mensajes no leidos");
                 } else {
                      Console.WriteLine("Mensajes no leidos:");
-                    string[] mensajes = response[2].Split('|');
+                    string[] mensajes = response[1].Split('|');
                     foreach (string mensaje in mensajes)
                     {
                         string[] UserNameCantidad = mensaje.Split('#');
@@ -363,7 +350,7 @@ namespace AppCliente
                 }
                 return false;
             } else {
-                WriteLine(response[2], "Red");
+                WriteLine(response[1], "Red");
                 return true;
             }
         }
@@ -391,7 +378,7 @@ namespace AppCliente
             string message = $"{_sistema.Usuario.Id}|{descripcion}|{habilidades}";
             SendMessage(Constantes.AltaPerfilTrabajo, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
+            if(response[0].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
                 Console.WriteLine("Alta de perfil de trabajo exitosa");
             } else {
                 WriteLine("Alta de perfil de trabajo fallida", "Red");
@@ -414,9 +401,9 @@ namespace AppCliente
             string message = $"{filtro}|{valor}";
             SendMessage(Constantes.ListarPerfilesTrabajo, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaListarPerfilesTrabajoExitoso.ToString())){
+            if(response[0].Equals(Constantes.RespuestaListarPerfilesTrabajoExitoso.ToString())){
                 Console.WriteLine("Perfiles encontrados:");
-                string[] perfiles = response[2].Split('|');
+                string[] perfiles = response[1].Split('|');
                 foreach (string perfil in perfiles)
                 {
                     string[] data = perfil.Split('#');
@@ -442,9 +429,9 @@ namespace AppCliente
             string message = $"{id}";
             SendMessage(Constantes.ConsultarPerfilEspecifico, message, socketCliente);
             string[] response = RecibirMensaje(socketCliente);
-            if(response[1].Equals(Constantes.RespuestaConsultarPerfilEspecificoExitoso.ToString())){
+            if(response[0].Equals(Constantes.RespuestaConsultarPerfilEspecificoExitoso.ToString())){
                 Console.WriteLine("Perfil encontrado:");
-                string[] data = response[2].Split('#');
+                string[] data = response[1].Split('#');
                 int idPerfil = int.Parse(data[0]);
                 string username = data[1];
                 string descripcion = data[2];

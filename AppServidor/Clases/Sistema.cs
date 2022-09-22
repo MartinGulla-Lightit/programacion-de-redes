@@ -15,14 +15,17 @@ namespace AppServidor.Clases
 
         public string RegistrarUser(string username, string password)
         {
-            if (Usuarios.Any(u => u.Username == username))
+            lock(Usuarios)
             {
-                return "Usuario ya existe";
-            }
-            else
-            {
-                Usuarios.Add(new User(username, password, Usuarios.Count+1));
-                return "Registro exitoso!";
+                if (Usuarios.Any(u => u.Username == username))
+                {
+                    return "Usuario ya existe";
+                }
+                else
+                {
+                    Usuarios.Add(new User(username, password, Usuarios.Count+1));
+                    return "Registro exitoso!";
+                }
             }
         }
 
