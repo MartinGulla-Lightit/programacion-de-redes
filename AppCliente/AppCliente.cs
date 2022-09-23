@@ -187,7 +187,7 @@ namespace AppCliente
             Console.WriteLine("Menu");
             Console.WriteLine("1. Login");
             Console.WriteLine("2. Registrarse");
-            Console.WriteLine("3. Logout");
+            Console.WriteLine("3. Desconectarse");
         }
 
         public static void ExecuteMainAction(string mensaje, Socket socketCliente){
