@@ -13,24 +13,24 @@ namespace AppServidor.Clases
             Usuarios.Add(new User("user", "user", 2));
         }
 
-        public string GuardarPathFoto(int id)
+        public string GuardarPathFoto(int id, string extension)
         {
             lock (Usuarios)
             {
                 User user = BuscarUsuario(id);
                 if (user != null)
                 {
-                    string path = "Fotos\\" + user.Username + ".jpg";
+                    string path = "Fotos\\" + user.Username + "." + extension;
                     user.pathFoto = Path.Combine(Directory.GetCurrentDirectory(), path);
                     return "Foto guardada";
                 }
                 return "No se encontro el usuario";
-            } 
+            }
         }
 
         public string RegistrarUser(string username, string password)
         {
-            lock(Usuarios)
+            lock (Usuarios)
             {
                 if (Usuarios.Any(u => u.Username == username))
                 {
@@ -38,7 +38,7 @@ namespace AppServidor.Clases
                 }
                 else
                 {
-                    Usuarios.Add(new User(username, password, Usuarios.Count+1));
+                    Usuarios.Add(new User(username, password, Usuarios.Count + 1));
                     return "Registro exitoso!";
                 }
             }
@@ -74,11 +74,13 @@ namespace AppServidor.Clases
             var stringMensajes = "";
             foreach (var mensaje in mensajes)
             {
-                if(mensaje.Read == false && mensaje.Receiver == sender)
+                if (mensaje.Read == false && mensaje.Receiver == sender)
                 {
                     stringMensajes += $"==> De: {BuscarUsuario(mensaje.Sender).Username} Para: {BuscarUsuario(mensaje.Receiver).Username} Mensaje: {mensaje.Message}";
                     mensaje.Read = true;
-                } else {
+                }
+                else
+                {
                     stringMensajes += $"=== De: {BuscarUsuario(mensaje.Sender).Username} Para: {BuscarUsuario(mensaje.Receiver).Username} Mensaje: {mensaje.Message}";
                 }
                 stringMensajes += "|";
@@ -131,7 +133,8 @@ namespace AppServidor.Clases
             }
         }
 
-        public string CrearPerfilDeTrabajo(string userId, string descripcion, string[] habilidades){
+        public string CrearPerfilDeTrabajo(string userId, string descripcion, string[] habilidades)
+        {
             var user = Usuarios.FirstOrDefault(u => u.Id == int.Parse(userId));
             if (user != null && user.descripcion == null)
             {
@@ -142,26 +145,33 @@ namespace AppServidor.Clases
             return "";
         }
 
-        public string ListarPerfilesDeTrabajoFiltrados(string filtro, string datoDelFiltro){
+        public string ListarPerfilesDeTrabajoFiltrados(string filtro, string datoDelFiltro)
+        {
             var perfiles = Usuarios.Where(u => u.descripcion != null);
-            if (filtro.Equals("1")){
+            if (filtro.Equals("1"))
+            {
                 perfiles = perfiles.Where(u => u.Username.Contains(datoDelFiltro));
             }
-            else if (filtro.Equals("2")){
+            else if (filtro.Equals("2"))
+            {
                 perfiles = perfiles.Where(u => u.descripcion.Contains(datoDelFiltro));
             }
-            else if (filtro.Equals("3")){
+            else if (filtro.Equals("3"))
+            {
                 perfiles = perfiles.Where(u => u.habilidades.Contains(datoDelFiltro));
             }
-            else if (!filtro.Equals("4")){
+            else if (!filtro.Equals("4"))
+            {
                 return "";
             }
             return string.Join("|", perfiles.Select(u => $"{u.Id}#{u.Username}#{u.descripcion}#{string.Join(", ", (u.habilidades))}"));
         }
 
-        public string ConsultarPerfilEspecifico(string userId){
+        public string ConsultarPerfilEspecifico(string userId)
+        {
             var usuario = BuscarUsuario(int.Parse(userId));
-            if (usuario != null && usuario.descripcion != null){
+            if (usuario != null && usuario.descripcion != null)
+            {
                 return $"{usuario.Id}#{usuario.Username}#{usuario.descripcion}#{string.Join(", ", (usuario.habilidades))}";
             }
             return "";

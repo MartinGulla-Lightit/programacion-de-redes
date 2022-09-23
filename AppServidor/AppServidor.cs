@@ -121,7 +121,8 @@ namespace AppServidor
             DecidirRespuesta(comando, mensaje, socketCliente);
         }
 
-        public static void SendMessage(int command, string mensaje, Socket socketCliente){
+        public static void SendMessage(int command, string mensaje, Socket socketCliente)
+        {
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
@@ -130,12 +131,12 @@ namespace AppServidor
             int size = Constantes.Command;
             string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
-            while (offset < size) 
+            while (offset < size)
             {
                 int enviados = socketCliente.Send(dataCommand2, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
+                if (enviados == 0)
                 {
-                    throw new SocketException();   
+                    throw new SocketException();
                 }
                 offset += enviados;
             }
@@ -143,12 +144,12 @@ namespace AppServidor
             // Mando el tamaño del mensaje
             offset = 0;
             size = Constantes.LargoFijo;
-            while (offset < size) 
+            while (offset < size)
             {
                 int enviados = socketCliente.Send(dataLength, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
+                if (enviados == 0)
                 {
-                    throw new SocketException();   
+                    throw new SocketException();
                 }
                 offset += enviados;
             }
@@ -217,12 +218,14 @@ namespace AppServidor
             {
                 SendMessage(Constantes.RespuestaGuardarFotoPerfilFallido, "El usuario no existe", socketCliente);
                 return;
-            } else {
+            }
+            else
+            {
                 SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", socketCliente);
                 Console.WriteLine("Antes de recibir el archivo");
                 var fileCommonHandler = new FileCommsHandler(socketCliente);
-                fileCommonHandler.ReceiveFile(user.Username + ".jpg");
-                _sistema.GuardarPathFoto(id);
+                string extension = fileCommonHandler.ReceiveFile(user.Username);
+                _sistema.GuardarPathFoto(id, extension);
                 Console.WriteLine("Archivo recibido!!");
             }
         }
@@ -235,9 +238,11 @@ namespace AppServidor
             {
                 SendMessage(Constantes.RespuestaConsultarFotoPerfilFallido, "El usuario no tiene foto", socketCliente);
                 return;
-            } else {
+            }
+            else
+            {
                 SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", socketCliente);
-                // Console.WriteLine(user.pathFoto);
+                Console.WriteLine(user.pathFoto);
                 Console.WriteLine("Antes de enviar el archivo");
                 var fileCommonHandler = new FileCommsHandler(socketCliente);
                 fileCommonHandler.SendFile(user.pathFoto);
@@ -249,15 +254,15 @@ namespace AppServidor
         {
             string[] datos = mensaje.Split('|');
             int Sender = Convert.ToInt32(datos[0]);
-            int Receiver = _sistema.BuscarUsuarioUserName(datos[1]) !=null ? _sistema.BuscarUsuarioUserName(datos[1]).Id : 0;
-            if(Receiver == 0)
+            int Receiver = _sistema.BuscarUsuarioUserName(datos[1]) != null ? _sistema.BuscarUsuarioUserName(datos[1]).Id : 0;
+            if (Receiver == 0)
             {
                 SendMessage(Constantes.RespuestaListarMensajesFallido, "El usuario no existe", socketCliente);
             }
             else
             {
                 string respuesta = _sistema.DevolverStringConMensajesEntreUsuarios(Sender, Receiver);
-                if(respuesta == null)
+                if (respuesta == null)
                 {
                     SendMessage(Constantes.RespuestaListarMensajesFallido, "No hay mensajes con el usuario", socketCliente);
                 }
@@ -282,7 +287,7 @@ namespace AppServidor
             string[] datos = mensaje.Split('|');
             int Sender = Convert.ToInt32(datos[0]);
             int Receiver = _sistema.BuscarUsuarioUserName(datos[1]).Id;
-            if(Receiver == 0)
+            if (Receiver == 0)
             {
                 SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", socketCliente);
             }
@@ -293,7 +298,7 @@ namespace AppServidor
                 _sistema.AgregarMensaje(mensajeNuevo);
                 SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", socketCliente);
             }
-        } 
+        }
 
         public static void Login(string mensaje, Socket socketCliente)
         {
@@ -345,7 +350,8 @@ namespace AppServidor
             SendMessage(command, respuesta, socketCliente);
         }
 
-        public static void ConsultarPerfilEspecifico(string mensaje, Socket socketCliente){
+        public static void ConsultarPerfilEspecifico(string mensaje, Socket socketCliente)
+        {
             string respuesta = _sistema.ConsultarPerfilEspecifico(mensaje);
             int command = respuesta.Length > 0 ? Constantes.RespuestaConsultarPerfilEspecificoExitoso : Constantes.RespuestaConsultarPerfilEspecificoFallido;
             SendMessage(command, respuesta, socketCliente);

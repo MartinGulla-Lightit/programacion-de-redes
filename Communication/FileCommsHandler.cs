@@ -46,18 +46,25 @@ namespace Communication
             }
         }
 
-        public void ReceiveFile(string userName)
+        public string ReceiveFile(string userName)
         {
             // ---> Recibir el largo del nombre del archivo
             int fileNameSize = _conversionHandler.ConvertBytesToInt(
                 _socketHelper.Receive(Protocol.FixedDataSize));
             // ---> Recibir el nombre del archivo
             string fileName = _conversionHandler.ConvertBytesToString(_socketHelper.Receive(fileNameSize));
+            string extension = fileName.Split('.').Last();
+            userName = userName + "." + extension;
+            string fileName2 = Path.Combine("Fotos", userName);
+            // if the file exists then delete it
+            if (_fileHandler.FileExists(fileName2))
+                _fileHandler.DeleteFile(fileName2);
             // ---> Recibir el largo del archivo
             long fileSize = _conversionHandler.ConvertBytesToLong(
                 _socketHelper.Receive(Protocol.FixedFileSize));
             // ---> Recibir el archivo
             ReceiveFileWithStreams(fileSize, userName);
+            return extension;
         }
 
         private void SendFileWithStream(long fileSize, string path)
