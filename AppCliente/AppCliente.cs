@@ -271,7 +271,7 @@ namespace AppCliente
                     AltaPerfilTrabajo(socketCliente);
                     break;
                 case "2":
-                    Console.WriteLine("AsociarFotoPerfilTrabajo()");
+                    AsociarFotoPerfilTrabajo(socketCliente);
                     break;
                 case "3":
                     ListarPerfilesTrabajo(socketCliente);
@@ -291,6 +291,24 @@ namespace AppCliente
                 default:
                     WriteLine("Opcion incorrecta", "Red");
                     break;
+            }
+        }
+
+        public static void AsociarFotoPerfilTrabajo(Socket socketCliente){
+            SendMessage(Constantes.GuardarFotoPerfil, $"{_sistema.Usuario.Id}", socketCliente);
+            string[] response = RecibirMensaje(socketCliente);
+            if(response[0].Equals("0")){
+                WriteLine(response[1], "Red");
+            } else {
+                try{
+                    Console.WriteLine("Ingrese la ruta completa al archivo: ");
+                    String abspath = ReadLine("Blue");
+                    var fileCommonHandler = new FileCommsHandler(socketCliente);
+                    fileCommonHandler.SendFile(abspath);
+                    Console.WriteLine("Se envio el archivo al Servidor");
+                } catch (Exception e){
+                    Console.WriteLine("Error al enviar el archivo al Servidor");
+                } 
             }
         }
 
@@ -443,6 +461,20 @@ namespace AppCliente
                 WriteLine($"Descripcion: {descripcion}", "DarkYellow");
                 WriteLine($"Habilidades: {habilidades}", "DarkYellow");
                 WriteLine("<======= Fin del perfil =======>", "DarkYellow");
+                WriteLine("Desea descargar la foto de perfil? (s/n)", "Gray");
+                string respuesta = ReadLine("Blue");
+                if (respuesta.Equals("s", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    SendMessage(Constantes.ConsultarFotoPerfil, idPerfil.ToString(), socketCliente);
+                    string[] responseFoto = RecibirMensaje(socketCliente);
+                    if(responseFoto[0].Equals(Constantes.RespuestaConsultarFotoPerfilExitoso.ToString())){
+                        var fileCommonHandler = new FileCommsHandler(socketCliente);
+                        fileCommonHandler.ReceiveFile(username + ".jpg");
+                        WriteLine("Foto de perfil descargada", "Green");
+                    } else {
+                        WriteLine(responseFoto[1], "Red");
+                    } 
+                }
             } else {
                 WriteLine("Consultar perfil especifico fallido, puede que no exista el usuario, o no haya dado de alta su perfil de trabajo", "Red");
             }

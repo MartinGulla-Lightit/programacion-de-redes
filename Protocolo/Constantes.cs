@@ -34,5 +34,11 @@ public static class Constantes
     public const int ListarMeensajesNoLeidos = 9;
     public const int RespuestaListarMensajesNoLeidosExitoso = 9;
     public const int RespuestaListarMensajesNoLeidosFallido = 0;
+    public const int GuardarFotoPerfil = 10;
+    public const int RespuestaGuardarFotoPerfilExitoso = 10;
+    public const int RespuestaGuardarFotoPerfilFallido = 0;
+    public const int ConsultarFotoPerfil = 11;
+    public const int RespuestaConsultarFotoPerfilExitoso = 11;
+    public const int RespuestaConsultarFotoPerfilFallido = 0;
     
 }

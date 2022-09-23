@@ -13,6 +13,21 @@ namespace AppServidor.Clases
             Usuarios.Add(new User("user", "user", 2));
         }
 
+        public string GuardarPathFoto(int id)
+        {
+            lock (Usuarios)
+            {
+                User user = BuscarUsuario(id);
+                if (user != null)
+                {
+                    string path = "Fotos\\" + user.Username + ".jpg";
+                    user.pathFoto = Path.Combine(Directory.GetCurrentDirectory(), path);
+                    return "Foto guardada";
+                }
+                return "No se encontro el usuario";
+            } 
+        }
+
         public string RegistrarUser(string username, string password)
         {
             lock(Usuarios)

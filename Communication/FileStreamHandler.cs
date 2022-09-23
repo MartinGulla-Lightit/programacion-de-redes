@@ -31,6 +31,10 @@
 
         public void Write(string fileName, byte[] data)
         {
+            fileName = Path.Combine("Fotos", fileName);
+            // if the file exists then delete it
+            if (_fileHandler.FileExists(fileName))
+                _fileHandler.DeleteFile(fileName);
             var fileMode = _fileHandler.FileExists(fileName) ? FileMode.Append : FileMode.Create;
             using var fs = new FileStream(fileName, fileMode);
             fs.Write(data, 0, data.Length);

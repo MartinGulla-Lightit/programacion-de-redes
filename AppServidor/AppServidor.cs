@@ -198,8 +198,50 @@ namespace AppServidor
                 case "9":
                     ListarMensajesNoLeidos(mensaje, socketCliente);
                     break;
+                case "10":
+                    GuardarFoto(mensaje, socketCliente);
+                    break;
+                case "11":
+                    ConsultarFoto(mensaje, socketCliente);
+                    break;
                 default:
                     break;
+            }
+        }
+
+        public static void GuardarFoto(string mensaje, Socket socketCliente)
+        {
+            int id = Convert.ToInt32(mensaje);
+            User user = _sistema.BuscarUsuario(id);
+            if (user == null)
+            {
+                SendMessage(Constantes.RespuestaGuardarFotoPerfilFallido, "El usuario no existe", socketCliente);
+                return;
+            } else {
+                SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", socketCliente);
+                Console.WriteLine("Antes de recibir el archivo");
+                var fileCommonHandler = new FileCommsHandler(socketCliente);
+                fileCommonHandler.ReceiveFile(user.Username + ".jpg");
+                _sistema.GuardarPathFoto(id);
+                Console.WriteLine("Archivo recibido!!");
+            }
+        }
+
+        public static void ConsultarFoto(string mensaje, Socket socketCliente)
+        {
+            int id = Convert.ToInt32(mensaje);
+            User user = _sistema.BuscarUsuario(id);
+            if (user.pathFoto == null)
+            {
+                SendMessage(Constantes.RespuestaConsultarFotoPerfilFallido, "El usuario no tiene foto", socketCliente);
+                return;
+            } else {
+                SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", socketCliente);
+                // Console.WriteLine(user.pathFoto);
+                Console.WriteLine("Antes de enviar el archivo");
+                var fileCommonHandler = new FileCommsHandler(socketCliente);
+                fileCommonHandler.SendFile(user.pathFoto);
+                Console.WriteLine("Archivo enviado!!");
             }
         }
 

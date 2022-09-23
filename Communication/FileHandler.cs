@@ -32,5 +32,13 @@ namespace Communication
 
             throw new Exception("File does not exist");
         }
+
+        public void DeleteFile(string path)
+        {
+            if (FileExists(path))
+            {
+                File.Delete(path);
+            }
+        }
     }
 }

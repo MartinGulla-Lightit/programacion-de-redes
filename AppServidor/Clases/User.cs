@@ -7,6 +7,7 @@ namespace AppServidor.Clases
         public string Password { get; set; }
         public string descripcion { get; set; }
         public string[] habilidades { get; set; }
+        public string pathFoto { get; set; }
         // public bool estaLogueado { get; set; }
         // public List<Mensaje> Mensajes { get; set; }
 
