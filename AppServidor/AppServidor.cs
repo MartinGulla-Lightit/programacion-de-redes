@@ -241,12 +241,19 @@ namespace AppServidor
             }
             else
             {
-                SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", socketCliente);
-                Console.WriteLine(user.pathFoto);
-                Console.WriteLine("Antes de enviar el archivo");
-                var fileCommonHandler = new FileCommsHandler(socketCliente);
-                fileCommonHandler.SendFile(user.pathFoto);
-                Console.WriteLine("Archivo enviado!!");
+                try
+                {
+                    SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", socketCliente);
+                    Console.WriteLine(user.pathFoto);
+                    Console.WriteLine("Antes de enviar el archivo");
+                    var fileCommonHandler = new FileCommsHandler(socketCliente);
+                    fileCommonHandler.SendFile(user.pathFoto);
+                    Console.WriteLine("Archivo enviado!!");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }  
             }
         }
 

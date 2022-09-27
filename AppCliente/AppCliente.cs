@@ -469,7 +469,7 @@ namespace AppCliente
                     string[] responseFoto = RecibirMensaje(socketCliente);
                     if(responseFoto[0].Equals(Constantes.RespuestaConsultarFotoPerfilExitoso.ToString())){
                         var fileCommonHandler = new FileCommsHandler(socketCliente);
-                        fileCommonHandler.ReceiveFile(username + ".jpg");
+                        fileCommonHandler.ReceiveFile(username);
                         WriteLine("Foto de perfil descargada", "Green");
                     } else {
                         WriteLine(responseFoto[1], "Red");

@@ -8,8 +8,6 @@ namespace AppServidor.Clases
         public string descripcion { get; set; }
         public string[] habilidades { get; set; }
         public string pathFoto { get; set; }
-        // public bool estaLogueado { get; set; }
-        // public List<Mensaje> Mensajes { get; set; }
 
         public User(string username, string password, int id)
         {
