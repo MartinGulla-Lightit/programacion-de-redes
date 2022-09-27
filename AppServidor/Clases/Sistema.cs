@@ -17,7 +17,6 @@ namespace AppServidor.Clases
         {
             lock (Usuarios)
             {
-                Thread.Sleep(10000);
                 User user = BuscarUsuario(id);
                 if (user != null)
                 {
