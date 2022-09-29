@@ -10,7 +10,7 @@ namespace Communication
     public class FileCommsHandler
     {
         private readonly ConversionHandler _conversionHandler;
-        private readonly FileHandler _fileHandler;
+        public readonly FileHandler _fileHandler;
         private readonly FileStreamHandler _fileStreamHandler;
         private readonly SocketHelper _socketHelper;
 
