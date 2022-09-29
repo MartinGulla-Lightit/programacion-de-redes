@@ -293,17 +293,24 @@ namespace AppServidor
         {
             string[] datos = mensaje.Split('|');
             int Sender = Convert.ToInt32(datos[0]);
-            int Receiver = _sistema.BuscarUsuarioUserName(datos[1]).Id;
-            if (Receiver == 0)
+            try
+            {
+                int Receiver = _sistema.BuscarUsuarioUserName(datos[1]).Id;
+                if (Receiver == 0)
+                {
+                    SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", socketCliente);
+                }
+                else
+                {
+                    string Texto = datos[2];
+                    Mensaje mensajeNuevo = new Mensaje(Sender, Receiver, Texto);
+                    _sistema.AgregarMensaje(mensajeNuevo);
+                    SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", socketCliente);
+                }
+            }
+            catch (Exception e)
             {
                 SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", socketCliente);
-            }
-            else
-            {
-                string Texto = datos[2];
-                Mensaje mensajeNuevo = new Mensaje(Sender, Receiver, Texto);
-                _sistema.AgregarMensaje(mensajeNuevo);
-                SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", socketCliente);
             }
         }
 
