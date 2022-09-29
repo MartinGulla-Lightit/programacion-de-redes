@@ -221,12 +221,19 @@ namespace AppServidor
             }
             else
             {
-                SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", socketCliente);
-                Console.WriteLine("Antes de recibir el archivo");
-                var fileCommonHandler = new FileCommsHandler(socketCliente);
-                string extension = fileCommonHandler.ReceiveFile(user.Username);
-                _sistema.GuardarPathFoto(id, extension);
-                Console.WriteLine("Archivo recibido!!");
+                try
+                {
+                    SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", socketCliente);
+                    Console.WriteLine("Antes de recibir el archivo");
+                    var fileCommonHandler = new FileCommsHandler(socketCliente);
+                    string extension = fileCommonHandler.ReceiveFile(user.Username);
+                    _sistema.GuardarPathFoto(id, extension);
+                    Console.WriteLine("Archivo recibido!!");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
         }
 
@@ -253,7 +260,7 @@ namespace AppServidor
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
-                }  
+                }
             }
         }
 
