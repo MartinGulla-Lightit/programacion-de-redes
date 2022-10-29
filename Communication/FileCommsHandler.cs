@@ -19,7 +19,7 @@ namespace Communication
             _conversionHandler = new ConversionHandler();
             _fileHandler = new FileHandler();
             _fileStreamHandler = new FileStreamHandler();
-            _socketHelper = new SocketHelper(networkStream);
+            _socketHelper = new SocketHelper(networkStream.Socket);
         }
 
         public void SendFile(string path)

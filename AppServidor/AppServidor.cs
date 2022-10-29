@@ -32,7 +32,6 @@ namespace AppServidor
             while (true)
             {
                 clientes++;
-                Console.WriteLine("1");
                 var tcpClientSocket = await tcpListener.AcceptTcpClientAsync().ConfigureAwait(false);
                 var task = Task.Run(async () => await ManejarCliente(tcpClientSocket, clientes).ConfigureAwait(false)); // Pedir un "hilo" del CLR prestado
             }
@@ -40,8 +39,6 @@ namespace AppServidor
 
         static async Task ManejarCliente(TcpClient tcpClientStocket, int nro)
         {
-                Console.WriteLine("2");
-
             try
             {
                 using (var networkStream = tcpClientStocket.GetStream())
@@ -50,7 +47,7 @@ namespace AppServidor
                     bool clienteConectado = true;
                     while (clienteConectado)
                     {
-                        RecibirMensaje(networkStream);
+                        await RecibirMensaje(networkStream);
                     }
                     Console.WriteLine("Cliente Desconectado");
                 }
@@ -63,7 +60,7 @@ namespace AppServidor
             }
         }
 
-        public static void RecibirMensaje(NetworkStream networkStreamCliente)
+        static async Task RecibirMensaje(NetworkStream networkStreamCliente)
         {
             // Recibo el comando
             int offset = 0;
