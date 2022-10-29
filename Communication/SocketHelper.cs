@@ -4,11 +4,11 @@ namespace Communication
 {
     public class SocketHelper
     {
-        private readonly Socket _socket;
+        private readonly NetworkStream _networkStream;
 
-        public SocketHelper(Socket socket)
+        public SocketHelper(NetworkStream networkStream)
         {
-            _socket = socket;
+            _networkStream = networkStream;
         }
 
         public void Send(byte[] data)
@@ -16,14 +16,14 @@ namespace Communication
             int offset = 0;
             while (offset < data.Length)
             {
-                var sent = _socket.Send(
+                var sent = _networkStream.WriteAsync(
                     data,
                     offset,
-                    data.Length - offset,
-                    SocketFlags.None);
-                if (sent == 0)
-                    throw new Exception("Connection lost");
-                offset += sent;
+                    data.Length - offset);
+                    // si se caga el evio es ACA
+                // if (sent == 0)
+                //     throw new Exception("Connection lost");
+                // offset += sent;
             }
         }
 
@@ -33,11 +33,10 @@ namespace Communication
             var data = new byte[length];
             while (offset < length)
             {
-                var received = _socket.Receive(
+                var received = _networkStream.ReadAsync(
                     data,
                     offset,
-                    length - offset,
-                    SocketFlags.None);
+                    length - offset).ConfigureAwait(false).GetAwaiter().GetResult();
                 if (received == 0)
                     throw new Exception("Connection lost");
                 offset += received;

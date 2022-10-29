@@ -5,6 +5,7 @@ using System.Text;
 using Protocolo;
 using AppCliente.Clases;
 using Communication;
+using System.Threading.Tasks;
 
 namespace AppCliente
 {
@@ -12,57 +13,72 @@ namespace AppCliente
     {
         private static Sistema _sistema = new Sistema();
         static readonly SettingsManager settingsMngr = new SettingsManager();
-        public static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.ForegroundColor
             = ConsoleColor.Gray;
             Console.WriteLine("Iniciando Aplicacion Cliente....!!!");
-            IniciarCliente();
+            await IniciarCliente();
         }
-        public static void IniciarCliente()
+        static async Task IniciarCliente()
         {
             try
             {
-                var socketCliente = new Socket(
-                    AddressFamily.InterNetwork,
-                    SocketType.Stream,
-                    ProtocolType.Tcp);
+                // var networkStream = new NetworkStream(
+                //     AddressFamily.InterNetwork,
+                //     SocketType.Stream,
+                //     ProtocolType.Tcp);
 
-                string ipServer = settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey);
-                string ipClient = settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey);
-                int serverPort = int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey));
+                // string ipServer = settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey);
+                // string ipClient = settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey);
+                // int serverPort = int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey));
 
-                var localEndPoint = new IPEndPoint(IPAddress.Parse(ipClient), 0);
-                socketCliente.Bind(localEndPoint);
-                var serverEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), serverPort);
-                socketCliente.Connect(serverEndpoint);
+                // var localEndPoint = new IPEndPoint(IPAddress.Parse(ipClient), 0);
+                // networkStream.Bind(localEndPoint);
+                // var serverEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), serverPort);
+                // networkStream.Connect(serverEndpoint);
+
+                var clientIpEndPoint = new IPEndPoint(
+                    IPAddress.Parse(settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey)),
+                    int.Parse(settingsMngr.ReadSettings(ClientConfig.clientPortconfigkey)));
+                var tcpClient = new TcpClient(clientIpEndPoint);
+                Console.WriteLine("Trying to connect to server");
+
+                await tcpClient.ConnectAsync(
+                    IPAddress.Parse(settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey)),
+                    int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey))).ConfigureAwait(false);
+                var keepConnection = true;
                 Console.WriteLine("Cliente Conectado al Servidor...!!!");
 
-                bool parar = false;
-                while (!parar)
+
+
+                await using (var networkStream = tcpClient.GetStream())
                 {
-                    ShowMainMenu();
-
-                    String mensaje = ReadLine("Blue");
-
-                    if (mensaje.Equals("3"))
+                    while (keepConnection)
                     {
-                        parar = true;
-                    }
-                    else
-                    {
-                        ExecuteMainAction(mensaje, socketCliente);
+                        ShowMainMenu();
+
+                        String mensaje = ReadLine("Blue");
+
+                        if (mensaje.Equals("3"))
+                        {
+                            keepConnection = false;
+                        }
+                        else
+                        {
+                            ExecuteMainAction(mensaje, networkStream);
+                        }
                     }
                 }
+
                 Console.WriteLine("Cierro el Cliente");
-                socketCliente.Shutdown(SocketShutdown.Both);
-                socketCliente.Close();
+                tcpClient.Close();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Intentando reconectar al servidor...!!!");
                 System.Threading.Thread.Sleep(2000);
-                IniciarCliente();
+                await IniciarCliente();
             }
         }
 
@@ -84,7 +100,7 @@ namespace AppCliente
 
 
         // Seccion de mensajes
-        public static void SendMessage(int command, string mensaje, Socket socketCliente){
+        static async void SendMessage(int command, string mensaje, NetworkStream networkStream){
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
@@ -93,44 +109,20 @@ namespace AppCliente
             int size = Constantes.Command;
             string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
-            while (offset < size) 
-            {
-                int enviados = socketCliente.Send(dataCommand2, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
-                {
-                    throw new SocketException();   
-                }
-                offset += enviados;
-            }
+            await networkStream.WriteAsync(dataCommand2, offset, size - offset).ConfigureAwait(false);    
 
             // Mando el tamaño del mensaje
             offset = 0;
             size = Constantes.LargoFijo;
-            while (offset < size) 
-            {
-                int enviados = socketCliente.Send(dataLength, offset, size - offset, SocketFlags.None);
-                if (enviados == 0) 
-                {
-                    throw new SocketException();   
-                }
-                offset += enviados;
-            }
+            await networkStream.WriteAsync(dataLength, offset, size - offset).ConfigureAwait(false);    
 
             // Mando el mensaje
             offset = 0;
             size = data.Length;
-            while (offset < size)
-            {
-                int enviados = socketCliente.Send(data, offset, size - offset, SocketFlags.None);
-                if (enviados == 0)
-                {
-                    throw new SocketException();
-                }
-                offset += enviados;
-            }
+            await networkStream.WriteAsync(data, offset, size - offset).ConfigureAwait(false);    
         }
 
-        public static string[] RecibirMensaje(Socket socketCliente)
+        public static string[] RecibirMensaje(NetworkStream networkStream)
         {
             // Recibo el comando
             int offset = 0;
@@ -138,7 +130,7 @@ namespace AppCliente
             byte[] dataCommand = new byte[size];
             while (offset < size)
             {
-                int recibidos = socketCliente.Receive(dataCommand, offset, size - offset, SocketFlags.None);
+                var recibidos = networkStream.ReadAsync(dataCommand, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult(); //.Result
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -152,7 +144,7 @@ namespace AppCliente
             size = Constantes.LargoFijo;
             while (offset < size)
             {
-                int recibidos = socketCliente.Receive(dataLength, offset, size - offset, SocketFlags.None);
+                int recibidos = networkStream.ReadAsync(dataLength, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -166,7 +158,7 @@ namespace AppCliente
             size = BitConverter.ToInt32(dataLength, 0);
             while (offset < size)
             {
-                int recibidos = socketCliente.Receive(data, offset, size - offset, SocketFlags.None);
+                int recibidos = networkStream.ReadAsync(data, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -190,7 +182,7 @@ namespace AppCliente
             Console.WriteLine("3. Desconectarse");
         }
 
-        public static void ExecuteMainAction(string mensaje, Socket socketCliente){
+        public static void ExecuteMainAction(string mensaje, NetworkStream networkStream){
             string user;
             string password;
             string message;
@@ -203,9 +195,9 @@ namespace AppCliente
                     Console.WriteLine("Ingrese su contraseña");
                     password = ReadLine("Blue");
                     message = $"{user}|{password}";
-                    SendMessage(Constantes.Login, message, socketCliente);
-                    response = RecibirMensaje(socketCliente);
-                    TryLogin(response, socketCliente);
+                    SendMessage(Constantes.Login, message, networkStream);
+                    response = RecibirMensaje(networkStream);
+                    TryLogin(response, networkStream);
                     break;
                 case "2":
                     Console.WriteLine("Ingrese nuevo nombre de usuario");
@@ -213,8 +205,8 @@ namespace AppCliente
                     Console.WriteLine("Ingrese contraseña");
                     password = ReadLine("Blue");
                     message = $"{user}|{password}";
-                    SendMessage(Constantes.Registrarse, message, socketCliente);
-                    response = RecibirMensaje(socketCliente);
+                    SendMessage(Constantes.Registrarse, message, networkStream);
+                    response = RecibirMensaje(networkStream);
                     break;
                 default:
                     WriteLine("Opcion incorrecta", "Red");
@@ -222,14 +214,14 @@ namespace AppCliente
             }
         }
 
-        public static void TryLogin(string[] response, Socket socketCliente){
+        public static void TryLogin(string[] response, NetworkStream networkStream){
             if(response[0].Equals(Constantes.RespuestaLoginExistoso.ToString())){
                 string[] data = response[1].Split('|');
                 int id = int.Parse(data[0]);
                 string username = data[1];
                 _sistema.Usuario = new User(id, username);
                 Console.WriteLine("Login exitoso, bienvenido {0}", username);
-                EnterLoggedInStatus(socketCliente);
+                EnterLoggedInStatus(networkStream);
             } else {
                 WriteLine(response[1], "Red");
             }
@@ -237,7 +229,7 @@ namespace AppCliente
 
         // Seccion de funcionalidades
 
-        public static void EnterLoggedInStatus(Socket socketCliente){
+        public static void EnterLoggedInStatus(NetworkStream networkStream){
             bool loggedIn = true;
             while(loggedIn){
                 ShowLoggedInMenu();
@@ -249,7 +241,7 @@ namespace AppCliente
                 }
                 else
                 {
-                    ExecuteLoggedInAction(option, socketCliente);
+                    ExecuteLoggedInAction(option, networkStream);
                 }
             }
         }
@@ -264,26 +256,26 @@ namespace AppCliente
             Console.WriteLine("7. Cerrar sesion");
         }
 
-        public static void ExecuteLoggedInAction(string option, Socket socketCliente){
+        public static void ExecuteLoggedInAction(string option, NetworkStream networkStream){
             switch (option)
             {
                 case "1":
-                    AltaPerfilTrabajo(socketCliente);
+                    AltaPerfilTrabajo(networkStream);
                     break;
                 case "2":
-                    AsociarFotoPerfilTrabajo(socketCliente);
+                    AsociarFotoPerfilTrabajo(networkStream);
                     break;
                 case "3":
-                    ListarPerfilesTrabajo(socketCliente);
+                    ListarPerfilesTrabajo(networkStream);
                     break;
                 case "4":
-                    ConsultarPerfilEspecifico(socketCliente);
+                    ConsultarPerfilEspecifico(networkStream);
                     break;
                 case "5":
-                    EnviarMensaje(socketCliente);
+                    EnviarMensaje(networkStream);
                     break;
                 case "6":
-                    ListarMensajes(socketCliente);
+                    ListarMensajes(networkStream);
                     break;
                 case "7":
                     Console.WriteLine("CerrarSesion()");
@@ -294,17 +286,17 @@ namespace AppCliente
             }
         }
 
-        public static void AsociarFotoPerfilTrabajo(Socket socketCliente){
+        public static void AsociarFotoPerfilTrabajo(NetworkStream networkStream){
             try{
                 Console.WriteLine("Ingrese la ruta completa al archivo: ");
                 String abspath = ReadLine("Blue");
-                var fileCommonHandler = new FileCommsHandler(socketCliente);
+                var fileCommonHandler = new FileCommsHandler(networkStream);
                 if(!fileCommonHandler._fileHandler.FileExists(abspath))
                 {
                     throw new FileNotFoundException();
                 }
-                SendMessage(Constantes.GuardarFotoPerfil, $"{_sistema.Usuario.Id}", socketCliente);
-                string[] response = RecibirMensaje(socketCliente);
+                SendMessage(Constantes.GuardarFotoPerfil, $"{_sistema.Usuario.Id}", networkStream);
+                string[] response = RecibirMensaje(networkStream);
                 fileCommonHandler.SendFile(abspath);
                 Console.WriteLine("Se envio el archivo al Servidor");
             } catch (Exception e){
@@ -312,14 +304,14 @@ namespace AppCliente
             } 
         }
 
-        public static void EnviarMensaje(Socket socketCliente){
+        public static void EnviarMensaje(NetworkStream networkStream){
             Console.WriteLine("Ingrese el nombre de usuario al que desea enviar el mensaje");
             string nombreUsuario = ReadLine("Blue");
             Console.WriteLine("Ingrese el mensaje");
             string mensaje = ReadLine("Blue");
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}|{mensaje}";
-            SendMessage(Constantes.EnviarMensaje, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.EnviarMensaje, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaEnviarMensajeExitoso.ToString())){
                 Console.WriteLine("Mensaje enviado");
             } else {
@@ -327,19 +319,19 @@ namespace AppCliente
             }
         }
 
-        public static void ListarMensajes(Socket socketCliente){
-            bool error = ListarMensajesNoLeidos(socketCliente);
+        public static void ListarMensajes(NetworkStream networkStream){
+            bool error = ListarMensajesNoLeidos(networkStream);
             if(!error){
-                ListarMensajesDeUsuarioEspecifico(socketCliente);
+                ListarMensajesDeUsuarioEspecifico(networkStream);
             }
         }
 
-        public static void ListarMensajesDeUsuarioEspecifico(Socket socketCliente){
+        public static void ListarMensajesDeUsuarioEspecifico(NetworkStream networkStream){
             Console.WriteLine("Ingrese el nombre de usuario del cual desea ver los mensajes");
             string nombreUsuario = ReadLine("Blue");
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}";
-            SendMessage(Constantes.ListarMensajes, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.ListarMensajes, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarMensajesExitoso.ToString())){
                 string[] mensajes = response[1].Split('|');
                 foreach (string mensaje in mensajes)
@@ -351,10 +343,10 @@ namespace AppCliente
             }
         }
 
-        public static bool ListarMensajesNoLeidos(Socket socketCliente){
+        public static bool ListarMensajesNoLeidos(NetworkStream networkStream){
             string message = $"{_sistema.Usuario.Id}";
-            SendMessage(Constantes.ListarMeensajesNoLeidos, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.ListarMeensajesNoLeidos, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarMensajesNoLeidosExitoso.ToString())){
                 if(response[1].Equals("")){
                     Console.WriteLine("No tiene mensajes no leidos");
@@ -374,7 +366,7 @@ namespace AppCliente
             }
         }
 
-        public static void AltaPerfilTrabajo(Socket socketCliente)
+        public static void AltaPerfilTrabajo(NetworkStream networkStream)
         {
             Console.WriteLine("Ingrese descripcion del perfil");
             string descripcion = ReadLine("Blue");
@@ -395,8 +387,8 @@ namespace AppCliente
             string[] habilidadesArray = listaHabilidades.ToArray();
             string habilidades = string.Join("#", habilidadesArray);
             string message = $"{_sistema.Usuario.Id}|{descripcion}|{habilidades}";
-            SendMessage(Constantes.AltaPerfilTrabajo, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.AltaPerfilTrabajo, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
                 Console.WriteLine("Alta de perfil de trabajo exitosa");
             } else {
@@ -404,7 +396,7 @@ namespace AppCliente
             }
         }
 
-        public static void ListarPerfilesTrabajo(Socket socketCliente){
+        public static void ListarPerfilesTrabajo(NetworkStream networkStream){
             Console.WriteLine("Filtrar por:");
             Console.WriteLine("1. Nombre");
             Console.WriteLine("2. Descripcion");
@@ -418,8 +410,8 @@ namespace AppCliente
                 valor = ReadLine("Blue");
             }
             string message = $"{filtro}|{valor}";
-            SendMessage(Constantes.ListarPerfilesTrabajo, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.ListarPerfilesTrabajo, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarPerfilesTrabajoExitoso.ToString())){
                 Console.WriteLine("Perfiles encontrados:");
                 string[] perfiles = response[1].Split('|');
@@ -442,12 +434,12 @@ namespace AppCliente
             }
         }
 
-        public static void ConsultarPerfilEspecifico(Socket socketCliente){
+        public static void ConsultarPerfilEspecifico(NetworkStream networkStream){
             Console.WriteLine("Ingrese el id del perfil");
             string id = ReadLine("Blue");
             string message = $"{id}";
-            SendMessage(Constantes.ConsultarPerfilEspecifico, message, socketCliente);
-            string[] response = RecibirMensaje(socketCliente);
+            SendMessage(Constantes.ConsultarPerfilEspecifico, message, networkStream);
+            string[] response = RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaConsultarPerfilEspecificoExitoso.ToString())){
                 Console.WriteLine("Perfil encontrado:");
                 string[] data = response[1].Split('#');
@@ -465,10 +457,10 @@ namespace AppCliente
                 string respuesta = ReadLine("Blue");
                 if (respuesta.Equals("s", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    SendMessage(Constantes.ConsultarFotoPerfil, idPerfil.ToString(), socketCliente);
-                    string[] responseFoto = RecibirMensaje(socketCliente);
+                    SendMessage(Constantes.ConsultarFotoPerfil, idPerfil.ToString(), networkStream);
+                    string[] responseFoto = RecibirMensaje(networkStream);
                     if(responseFoto[0].Equals(Constantes.RespuestaConsultarFotoPerfilExitoso.ToString())){
-                        var fileCommonHandler = new FileCommsHandler(socketCliente);
+                        var fileCommonHandler = new FileCommsHandler(networkStream);
                         fileCommonHandler.ReceiveFile(username);
                         WriteLine("Foto de perfil descargada", "Green");
                     } else {

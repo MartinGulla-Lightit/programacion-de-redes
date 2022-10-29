@@ -14,12 +14,12 @@ namespace Communication
         private readonly FileStreamHandler _fileStreamHandler;
         private readonly SocketHelper _socketHelper;
 
-        public FileCommsHandler(Socket socket)
+        public FileCommsHandler(NetworkStream networkStream)
         {
             _conversionHandler = new ConversionHandler();
             _fileHandler = new FileHandler();
             _fileStreamHandler = new FileStreamHandler();
-            _socketHelper = new SocketHelper(socket);
+            _socketHelper = new SocketHelper(networkStream);
         }
 
         public void SendFile(string path)
