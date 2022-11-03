@@ -56,7 +56,7 @@ namespace AppCliente
                 {
                     while (keepConnection)
                     {
-                        ShowMainMenu();
+                        await ShowMainMenu();
 
                         String mensaje = ReadLine("Blue");
 
@@ -66,7 +66,7 @@ namespace AppCliente
                         }
                         else
                         {
-                            ExecuteMainAction(mensaje, networkStream);
+                            await ExecuteMainAction(mensaje, networkStream);
                         }
                     }
                 }
@@ -100,7 +100,7 @@ namespace AppCliente
 
 
         // Seccion de mensajes
-        static async void SendMessage(int command, string mensaje, NetworkStream networkStream){
+        static async Task SendMessage(int command, string mensaje, NetworkStream networkStream){
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
 
@@ -122,7 +122,7 @@ namespace AppCliente
             await networkStream.WriteAsync(data, offset, size - offset).ConfigureAwait(false);    
         }
 
-        public static string[] RecibirMensaje(NetworkStream networkStream)
+        public static async Task<string[]> RecibirMensaje(NetworkStream networkStream)
         {
             // Recibo el comando
             int offset = 0;
@@ -130,7 +130,7 @@ namespace AppCliente
             byte[] dataCommand = new byte[size];
             while (offset < size)
             {
-                var recibidos = networkStream.ReadAsync(dataCommand, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult(); //.Result
+                var recibidos = await networkStream.ReadAsync(dataCommand, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -144,7 +144,7 @@ namespace AppCliente
             size = Constantes.LargoFijo;
             while (offset < size)
             {
-                int recibidos = networkStream.ReadAsync(dataLength, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+                int recibidos = await networkStream.ReadAsync(dataLength, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -158,7 +158,7 @@ namespace AppCliente
             size = BitConverter.ToInt32(dataLength, 0);
             while (offset < size)
             {
-                int recibidos = networkStream.ReadAsync(data, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+                int recibidos = await networkStream.ReadAsync(data, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -175,14 +175,14 @@ namespace AppCliente
         }
 
         // Seccion Alta de usuario
-        public static void ShowMainMenu(){
+        public static async Task ShowMainMenu(){
             Console.WriteLine("Menu");
             Console.WriteLine("1. Login");
             Console.WriteLine("2. Registrarse");
             Console.WriteLine("3. Desconectarse");
         }
 
-        public static void ExecuteMainAction(string mensaje, NetworkStream networkStream){
+        public static async Task ExecuteMainAction(string mensaje, NetworkStream networkStream){
             string user;
             string password;
             string message;
@@ -195,9 +195,9 @@ namespace AppCliente
                     Console.WriteLine("Ingrese su contraseña");
                     password = ReadLine("Blue");
                     message = $"{user}|{password}";
-                    SendMessage(Constantes.Login, message, networkStream);
-                    response = RecibirMensaje(networkStream);
-                    TryLogin(response, networkStream);
+                    await SendMessage(Constantes.Login, message, networkStream);
+                    response = await RecibirMensaje(networkStream);
+                    await TryLogin(response, networkStream);
                     break;
                 case "2":
                     Console.WriteLine("Ingrese nuevo nombre de usuario");
@@ -205,8 +205,8 @@ namespace AppCliente
                     Console.WriteLine("Ingrese contraseña");
                     password = ReadLine("Blue");
                     message = $"{user}|{password}";
-                    SendMessage(Constantes.Registrarse, message, networkStream);
-                    response = RecibirMensaje(networkStream);
+                    await SendMessage(Constantes.Registrarse, message, networkStream);
+                    response = await RecibirMensaje(networkStream);
                     break;
                 default:
                     WriteLine("Opcion incorrecta", "Red");
@@ -214,14 +214,14 @@ namespace AppCliente
             }
         }
 
-        public static void TryLogin(string[] response, NetworkStream networkStream){
+        public static async Task TryLogin(string[] response, NetworkStream networkStream){
             if(response[0].Equals(Constantes.RespuestaLoginExistoso.ToString())){
                 string[] data = response[1].Split('|');
                 int id = int.Parse(data[0]);
                 string username = data[1];
                 _sistema.Usuario = new User(id, username);
                 Console.WriteLine("Login exitoso, bienvenido {0}", username);
-                EnterLoggedInStatus(networkStream);
+                await EnterLoggedInStatus(networkStream);
             } else {
                 WriteLine(response[1], "Red");
             }
@@ -229,10 +229,10 @@ namespace AppCliente
 
         // Seccion de funcionalidades
 
-        public static void EnterLoggedInStatus(NetworkStream networkStream){
+        public static async Task EnterLoggedInStatus(NetworkStream networkStream){
             bool loggedIn = true;
             while(loggedIn){
-                ShowLoggedInMenu();
+                await ShowLoggedInMenu();
                 string option = ReadLine("Blue");
                 if (option.Equals("7", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -241,11 +241,11 @@ namespace AppCliente
                 }
                 else
                 {
-                    ExecuteLoggedInAction(option, networkStream);
+                    await ExecuteLoggedInAction(option, networkStream);
                 }
             }
         }
-        public static void ShowLoggedInMenu(){
+        public static async Task ShowLoggedInMenu(){
             Console.WriteLine("Menu");
             Console.WriteLine("1. Alta perfil de trabajo");
             Console.WriteLine("2. Asociar foto al perfil de trabajo");
@@ -256,26 +256,26 @@ namespace AppCliente
             Console.WriteLine("7. Cerrar sesion");
         }
 
-        public static void ExecuteLoggedInAction(string option, NetworkStream networkStream){
+        public static async Task ExecuteLoggedInAction(string option, NetworkStream networkStream){
             switch (option)
             {
                 case "1":
-                    AltaPerfilTrabajo(networkStream);
+                    await AltaPerfilTrabajo(networkStream);
                     break;
                 case "2":
-                    AsociarFotoPerfilTrabajo(networkStream);
+                    await AsociarFotoPerfilTrabajo(networkStream);
                     break;
                 case "3":
-                    ListarPerfilesTrabajo(networkStream);
+                    await ListarPerfilesTrabajo(networkStream);
                     break;
                 case "4":
-                    ConsultarPerfilEspecifico(networkStream);
+                    await ConsultarPerfilEspecifico(networkStream);
                     break;
                 case "5":
-                    EnviarMensaje(networkStream);
+                    await EnviarMensaje(networkStream);
                     break;
                 case "6":
-                    ListarMensajes(networkStream);
+                    await ListarMensajes(networkStream);
                     break;
                 case "7":
                     Console.WriteLine("CerrarSesion()");
@@ -286,7 +286,7 @@ namespace AppCliente
             }
         }
 
-        public static void AsociarFotoPerfilTrabajo(NetworkStream networkStream){
+        public static async Task AsociarFotoPerfilTrabajo(NetworkStream networkStream){
             try{
                 Console.WriteLine("Ingrese la ruta completa al archivo: ");
                 String abspath = ReadLine("Blue");
@@ -295,23 +295,23 @@ namespace AppCliente
                 {
                     throw new FileNotFoundException();
                 }
-                SendMessage(Constantes.GuardarFotoPerfil, $"{_sistema.Usuario.Id}", networkStream);
-                string[] response = RecibirMensaje(networkStream);
-                fileCommonHandler.SendFile(abspath);
+                await SendMessage(Constantes.GuardarFotoPerfil, $"{_sistema.Usuario.Id}", networkStream);
+                string[] response = await RecibirMensaje(networkStream);
+                await fileCommonHandler.SendFile(abspath);
                 Console.WriteLine("Se envio el archivo al Servidor");
             } catch (Exception e){
                 Console.WriteLine(e.Message);
             } 
         }
 
-        public static void EnviarMensaje(NetworkStream networkStream){
+        public static async Task EnviarMensaje(NetworkStream networkStream){
             Console.WriteLine("Ingrese el nombre de usuario al que desea enviar el mensaje");
             string nombreUsuario = ReadLine("Blue");
             Console.WriteLine("Ingrese el mensaje");
             string mensaje = ReadLine("Blue");
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}|{mensaje}";
-            SendMessage(Constantes.EnviarMensaje, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.EnviarMensaje, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaEnviarMensajeExitoso.ToString())){
                 Console.WriteLine("Mensaje enviado");
             } else {
@@ -319,19 +319,19 @@ namespace AppCliente
             }
         }
 
-        public static void ListarMensajes(NetworkStream networkStream){
-            bool error = ListarMensajesNoLeidos(networkStream);
+        public static async Task ListarMensajes(NetworkStream networkStream){
+            bool error = await ListarMensajesNoLeidos(networkStream);
             if(!error){
-                ListarMensajesDeUsuarioEspecifico(networkStream);
+                await ListarMensajesDeUsuarioEspecifico(networkStream);
             }
         }
 
-        public static void ListarMensajesDeUsuarioEspecifico(NetworkStream networkStream){
+        public static async Task ListarMensajesDeUsuarioEspecifico(NetworkStream networkStream){
             Console.WriteLine("Ingrese el nombre de usuario del cual desea ver los mensajes");
             string nombreUsuario = ReadLine("Blue");
             string message = $"{_sistema.Usuario.Id}|{nombreUsuario}";
-            SendMessage(Constantes.ListarMensajes, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.ListarMensajes, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarMensajesExitoso.ToString())){
                 string[] mensajes = response[1].Split('|');
                 foreach (string mensaje in mensajes)
@@ -343,10 +343,10 @@ namespace AppCliente
             }
         }
 
-        public static bool ListarMensajesNoLeidos(NetworkStream networkStream){
+        public static async Task<bool> ListarMensajesNoLeidos(NetworkStream networkStream){
             string message = $"{_sistema.Usuario.Id}";
-            SendMessage(Constantes.ListarMeensajesNoLeidos, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.ListarMeensajesNoLeidos, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarMensajesNoLeidosExitoso.ToString())){
                 if(response[1].Equals("")){
                     Console.WriteLine("No tiene mensajes no leidos");
@@ -366,7 +366,7 @@ namespace AppCliente
             }
         }
 
-        public static void AltaPerfilTrabajo(NetworkStream networkStream)
+        public static async Task AltaPerfilTrabajo(NetworkStream networkStream)
         {
             Console.WriteLine("Ingrese descripcion del perfil");
             string descripcion = ReadLine("Blue");
@@ -387,8 +387,8 @@ namespace AppCliente
             string[] habilidadesArray = listaHabilidades.ToArray();
             string habilidades = string.Join("#", habilidadesArray);
             string message = $"{_sistema.Usuario.Id}|{descripcion}|{habilidades}";
-            SendMessage(Constantes.AltaPerfilTrabajo, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.AltaPerfilTrabajo, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaAltaPerfilTrabajoExistoso.ToString())){
                 Console.WriteLine("Alta de perfil de trabajo exitosa");
             } else {
@@ -396,7 +396,7 @@ namespace AppCliente
             }
         }
 
-        public static void ListarPerfilesTrabajo(NetworkStream networkStream){
+        public static async Task ListarPerfilesTrabajo(NetworkStream networkStream){
             Console.WriteLine("Filtrar por:");
             Console.WriteLine("1. Nombre");
             Console.WriteLine("2. Descripcion");
@@ -410,8 +410,8 @@ namespace AppCliente
                 valor = ReadLine("Blue");
             }
             string message = $"{filtro}|{valor}";
-            SendMessage(Constantes.ListarPerfilesTrabajo, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.ListarPerfilesTrabajo, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaListarPerfilesTrabajoExitoso.ToString())){
                 Console.WriteLine("Perfiles encontrados:");
                 string[] perfiles = response[1].Split('|');
@@ -434,12 +434,12 @@ namespace AppCliente
             }
         }
 
-        public static void ConsultarPerfilEspecifico(NetworkStream networkStream){
+        public static async Task ConsultarPerfilEspecifico(NetworkStream networkStream){
             Console.WriteLine("Ingrese el id del perfil");
             string id = ReadLine("Blue");
             string message = $"{id}";
-            SendMessage(Constantes.ConsultarPerfilEspecifico, message, networkStream);
-            string[] response = RecibirMensaje(networkStream);
+            await SendMessage(Constantes.ConsultarPerfilEspecifico, message, networkStream);
+            string[] response = await RecibirMensaje(networkStream);
             if(response[0].Equals(Constantes.RespuestaConsultarPerfilEspecificoExitoso.ToString())){
                 Console.WriteLine("Perfil encontrado:");
                 string[] data = response[1].Split('#');
@@ -457,11 +457,11 @@ namespace AppCliente
                 string respuesta = ReadLine("Blue");
                 if (respuesta.Equals("s", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    SendMessage(Constantes.ConsultarFotoPerfil, idPerfil.ToString(), networkStream);
-                    string[] responseFoto = RecibirMensaje(networkStream);
+                    await SendMessage(Constantes.ConsultarFotoPerfil, idPerfil.ToString(), networkStream);
+                    string[] responseFoto = await RecibirMensaje(networkStream);
                     if(responseFoto[0].Equals(Constantes.RespuestaConsultarFotoPerfilExitoso.ToString())){
                         var fileCommonHandler = new FileCommsHandler(networkStream);
-                        fileCommonHandler.ReceiveFile(username);
+                        await fileCommonHandler.ReceiveFile(username);
                         WriteLine("Foto de perfil descargada", "Green");
                     } else {
                         WriteLine(responseFoto[1], "Red");

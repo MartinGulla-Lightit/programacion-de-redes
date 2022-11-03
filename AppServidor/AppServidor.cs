@@ -68,7 +68,7 @@ namespace AppServidor
             byte[] dataCommand = new byte[size];
             while (offset < size)
             {
-                int recibidos = networkStreamCliente.ReadAsync(dataCommand, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+                int recibidos = await networkStreamCliente.ReadAsync(dataCommand, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -82,7 +82,7 @@ namespace AppServidor
             size = Constantes.LargoFijo;
             while (offset < size)
             {
-                int recibidos = networkStreamCliente.ReadAsync(dataLength, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+                int recibidos = await networkStreamCliente.ReadAsync(dataLength, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -97,7 +97,7 @@ namespace AppServidor
             size = BitConverter.ToInt32(dataLength, 0);
             while (offset < size)
             {
-                int recibidos = networkStreamCliente.ReadAsync(data, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+                int recibidos = await networkStreamCliente.ReadAsync(data, offset, size - offset).ConfigureAwait(false);
                 if (recibidos == 0)
                 {
                     throw new SocketException();
@@ -110,10 +110,10 @@ namespace AppServidor
             {
                 comando = comando.Remove(0, 1);
             }
-            DecidirRespuesta(comando, mensaje, networkStreamCliente);
+            await DecidirRespuesta(comando, mensaje, networkStreamCliente);
         }
 
-        public static void SendMessage(int command, string mensaje, NetworkStream networkStreamCliente)
+        public static async Task SendMessage(int command, string mensaje, NetworkStream networkStreamCliente)
         {
             byte[] data = Encoding.UTF8.GetBytes(mensaje);
             byte[] dataLength = BitConverter.GetBytes(data.Length);
@@ -123,78 +123,78 @@ namespace AppServidor
             int size = Constantes.Command;
             string dataCommand = command > 9 ? command.ToString() : "0" + command.ToString();
             byte[] dataCommand2 = Encoding.UTF8.GetBytes(dataCommand);
-            networkStreamCliente.WriteAsync(dataCommand2, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+            await networkStreamCliente.WriteAsync(dataCommand2, offset, size - offset).ConfigureAwait(false);
 
             // Mando el tamaño del mensaje
             offset = 0;
             size = Constantes.LargoFijo;
-            networkStreamCliente.WriteAsync(dataLength, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+            await networkStreamCliente.WriteAsync(dataLength, offset, size - offset).ConfigureAwait(false);
 
             // Mando el mensaje
             offset = 0;
             size = data.Length;
-            networkStreamCliente.WriteAsync(data, offset, size - offset).ConfigureAwait(false).GetAwaiter().GetResult();
+            await networkStreamCliente.WriteAsync(data, offset, size - offset).ConfigureAwait(false);
         }
 
-        public static void DecidirRespuesta(string comando, string mensaje, NetworkStream networkStreamCliente)
+        public static async Task DecidirRespuesta(string comando, string mensaje, NetworkStream networkStreamCliente)
         {
             switch (comando)
             {
                 case "1":
-                    Login(mensaje, networkStreamCliente);
+                    await Login(mensaje, networkStreamCliente);
                     break;
                 case "2":
-                    Registrarse(mensaje, networkStreamCliente);
+                    await Registrarse(mensaje, networkStreamCliente);
                     break;
                 case "3":
-                    Logout(mensaje, networkStreamCliente);
+                    await Logout(mensaje, networkStreamCliente);
                     break;
                 case "4":
-                    CrearPerfilDeTrabajo(mensaje, networkStreamCliente);
+                    await CrearPerfilDeTrabajo(mensaje, networkStreamCliente);
                     break;
                 case "5":
-                    ListarPerfilesDeTrabajoFiltrados(mensaje, networkStreamCliente);
+                    await ListarPerfilesDeTrabajoFiltrados(mensaje, networkStreamCliente);
                     break;
                 case "6":
-                    ConsultarPerfilEspecifico(mensaje, networkStreamCliente);
+                    await ConsultarPerfilEspecifico(mensaje, networkStreamCliente);
                     break;
                 case "7":
-                    CrearMensaje(mensaje, networkStreamCliente);
+                    await CrearMensaje(mensaje, networkStreamCliente);
                     break;
                 case "8":
-                    ConsultarMensajeEspecifico(mensaje, networkStreamCliente);
+                    await ConsultarMensajeEspecifico(mensaje, networkStreamCliente);
                     break;
                 case "9":
-                    ListarMensajesNoLeidos(mensaje, networkStreamCliente);
+                    await ListarMensajesNoLeidos(mensaje, networkStreamCliente);
                     break;
                 case "10":
-                    GuardarFoto(mensaje, networkStreamCliente);
+                    await GuardarFoto(mensaje, networkStreamCliente);
                     break;
                 case "11":
-                    ConsultarFoto(mensaje, networkStreamCliente);
+                    await ConsultarFoto(mensaje, networkStreamCliente);
                     break;
                 default:
                     break;
             }
         }
 
-        public static void GuardarFoto(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task GuardarFoto(string mensaje, NetworkStream networkStreamCliente)
         {
             int id = Convert.ToInt32(mensaje);
             User user = _sistema.BuscarUsuario(id);
             if (user == null)
             {
-                SendMessage(Constantes.RespuestaGuardarFotoPerfilFallido, "El usuario no existe", networkStreamCliente);
+                await SendMessage(Constantes.RespuestaGuardarFotoPerfilFallido, "El usuario no existe", networkStreamCliente);
                 return;
             }
             else
             {
                 try
                 {
-                    SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", networkStreamCliente);
                     Console.WriteLine("Antes de recibir el archivo");
                     var fileCommonHandler = new FileCommsHandler(networkStreamCliente);
-                    string extension = fileCommonHandler.ReceiveFile(user.Username);
+                    string extension = await fileCommonHandler.ReceiveFile(user.Username);
                     _sistema.GuardarPathFoto(id, extension);
                     Console.WriteLine("Archivo recibido!!");
                 }
@@ -205,24 +205,23 @@ namespace AppServidor
             }
         }
 
-        public static void ConsultarFoto(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task ConsultarFoto(string mensaje, NetworkStream networkStreamCliente)
         {
             int id = Convert.ToInt32(mensaje);
             User user = _sistema.BuscarUsuario(id);
             if (user.pathFoto == null)
             {
-                SendMessage(Constantes.RespuestaConsultarFotoPerfilFallido, "El usuario no tiene foto", networkStreamCliente);
-                return;
+                await SendMessage(Constantes.RespuestaConsultarFotoPerfilFallido, "El usuario no tiene foto", networkStreamCliente);
             }
             else
             {
                 try
                 {
-                    SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaConsultarFotoPerfilExitoso, "El usuario tiene foto", networkStreamCliente);
                     Console.WriteLine(user.pathFoto);
                     Console.WriteLine("Antes de enviar el archivo");
                     var fileCommonHandler = new FileCommsHandler(networkStreamCliente);
-                    fileCommonHandler.SendFile(user.pathFoto);
+                    await fileCommonHandler.SendFile(user.pathFoto);
                     Console.WriteLine("Archivo enviado!!");
                 }
                 catch (Exception e)
@@ -232,39 +231,39 @@ namespace AppServidor
             }
         }
 
-        public static void ConsultarMensajeEspecifico(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task ConsultarMensajeEspecifico(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             int Sender = Convert.ToInt32(datos[0]);
             int Receiver = _sistema.BuscarUsuarioUserName(datos[1]) != null ? _sistema.BuscarUsuarioUserName(datos[1]).Id : 0;
             if (Receiver == 0)
             {
-                SendMessage(Constantes.RespuestaListarMensajesFallido, "El usuario no existe", networkStreamCliente);
+                await SendMessage(Constantes.RespuestaListarMensajesFallido, "El usuario no existe", networkStreamCliente);
             }
             else
             {
                 string respuesta = _sistema.DevolverStringConMensajesEntreUsuarios(Sender, Receiver);
                 if (respuesta == null)
                 {
-                    SendMessage(Constantes.RespuestaListarMensajesFallido, "No hay mensajes con el usuario", networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaListarMensajesFallido, "No hay mensajes con el usuario", networkStreamCliente);
                 }
                 else
                 {
-                    SendMessage(Constantes.RespuestaListarMensajesExitoso, respuesta, networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaListarMensajesExitoso, respuesta, networkStreamCliente);
                 }
             }
 
         }
 
-        public static void ListarMensajesNoLeidos(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task ListarMensajesNoLeidos(string mensaje, NetworkStream networkStreamCliente)
         {
             int id = Convert.ToInt32(mensaje);
             List<string> userNameYCantidadMensajesSinLeer = _sistema.DevolverUserNameYCantidadMensajesSinLeer(id);
             string respuesta = string.Join("|", userNameYCantidadMensajesSinLeer);
-            SendMessage(Constantes.RespuestaListarMensajesNoLeidosExitoso, respuesta, networkStreamCliente);
+            await SendMessage(Constantes.RespuestaListarMensajesNoLeidosExitoso, respuesta, networkStreamCliente);
         }
 
-        public static void CrearMensaje(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task CrearMensaje(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             int Sender = Convert.ToInt32(datos[0]);
@@ -273,51 +272,51 @@ namespace AppServidor
                 int Receiver = _sistema.BuscarUsuarioUserName(datos[1]).Id;
                 if (Receiver == 0)
                 {
-                    SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", networkStreamCliente);
                 }
                 else
                 {
                     string Texto = datos[2];
                     Mensaje mensajeNuevo = new Mensaje(Sender, Receiver, Texto);
                     _sistema.AgregarMensaje(mensajeNuevo);
-                    SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", networkStreamCliente);
+                    await SendMessage(Constantes.RespuestaEnviarMensajeExitoso, "Mensaje creado", networkStreamCliente);
                 }
             }
             catch (Exception e)
             {
-                SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", networkStreamCliente);
+                await SendMessage(Constantes.RespuestaEnviarMensajeFallido, "Usuario no existe", networkStreamCliente);
             }
         }
 
-        public static void Login(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task Login(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             string usuario = datos[0];
             string password = datos[1];
             string respuesta = _sistema.LoginUser(usuario, password);
             int command = respuesta.Contains("|") ? Constantes.RespuestaLoginExistoso : Constantes.RespuestaLoginFallido;
-            SendMessage(command, respuesta, networkStreamCliente);
+            await SendMessage(command, respuesta, networkStreamCliente);
         }
 
-        public static void Registrarse(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task Registrarse(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             string usuario = datos[0];
             string password = datos[1];
             string respuesta = _sistema.RegistrarUser(usuario, password);
-            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, networkStreamCliente);
+            await SendMessage(Constantes.RespuestaLoginExistoso, respuesta, networkStreamCliente);
         }
 
-        public static void Logout(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task Logout(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             string usuario = datos[0];
             string password = datos[1];
             string respuesta = _sistema.LogoutUser(usuario, password);
-            SendMessage(Constantes.RespuestaLoginExistoso, respuesta, networkStreamCliente);
+            await SendMessage(Constantes.RespuestaLoginExistoso, respuesta, networkStreamCliente);
         }
 
-        public static void CrearPerfilDeTrabajo(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task CrearPerfilDeTrabajo(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             string usuarioId = datos[0];
@@ -325,10 +324,10 @@ namespace AppServidor
             string[] habilidades = datos[2].Split('#');
             string respuesta = _sistema.CrearPerfilDeTrabajo(usuarioId, descripcion, habilidades);
             int command = respuesta.Length > 0 ? Constantes.RespuestaAltaPerfilTrabajoExistoso : Constantes.RespuestaAltaPerfilTrabajoFallido;
-            SendMessage(command, respuesta, networkStreamCliente);
+            await SendMessage(command, respuesta, networkStreamCliente);
         }
 
-        public static void ListarPerfilesDeTrabajoFiltrados(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task ListarPerfilesDeTrabajoFiltrados(string mensaje, NetworkStream networkStreamCliente)
         {
             string[] datos = mensaje.Split('|');
             string filtro = datos[0];
@@ -336,14 +335,14 @@ namespace AppServidor
             string respuesta = _sistema.ListarPerfilesDeTrabajoFiltrados(filtro, datoDelFiltro);
             Console.WriteLine("Respuesta: {0}", respuesta);
             int command = respuesta.Length > 0 ? Constantes.RespuestaListarPerfilesTrabajoExitoso : Constantes.RespuestaListarPerfilesTrabajoFallido;
-            SendMessage(command, respuesta, networkStreamCliente);
+            await SendMessage(command, respuesta, networkStreamCliente);
         }
 
-        public static void ConsultarPerfilEspecifico(string mensaje, NetworkStream networkStreamCliente)
+        public static async Task ConsultarPerfilEspecifico(string mensaje, NetworkStream networkStreamCliente)
         {
             string respuesta = _sistema.ConsultarPerfilEspecifico(mensaje);
             int command = respuesta.Length > 0 ? Constantes.RespuestaConsultarPerfilEspecificoExitoso : Constantes.RespuestaConsultarPerfilEspecificoFallido;
-            SendMessage(command, respuesta, networkStreamCliente);
+            await SendMessage(command, respuesta, networkStreamCliente);
         }
     }
 }
