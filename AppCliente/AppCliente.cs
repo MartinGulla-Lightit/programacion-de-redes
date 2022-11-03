@@ -194,6 +194,7 @@ namespace AppCliente
                     message = $"{user}|{password}";
                     await SendMessage(Constantes.Registrarse, message, networkStream);
                     response = await RecibirMensaje(networkStream);
+                    WriteLine(response[1], "Red");
                     break;
                 default:
                     WriteLine("Opcion incorrecta", "Red");
