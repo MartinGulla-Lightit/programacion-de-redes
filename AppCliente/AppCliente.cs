@@ -24,19 +24,6 @@ namespace AppCliente
         {
             try
             {
-                // var networkStream = new NetworkStream(
-                //     AddressFamily.InterNetwork,
-                //     SocketType.Stream,
-                //     ProtocolType.Tcp);
-
-                // string ipServer = settingsMngr.ReadSettings(ClientConfig.serverIPconfigkey);
-                // string ipClient = settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey);
-                // int serverPort = int.Parse(settingsMngr.ReadSettings(ClientConfig.serverPortconfigkey));
-
-                // var localEndPoint = new IPEndPoint(IPAddress.Parse(ipClient), 0);
-                // networkStream.Bind(localEndPoint);
-                // var serverEndpoint = new IPEndPoint(IPAddress.Parse(ipServer), serverPort);
-                // networkStream.Connect(serverEndpoint);
 
                 var clientIpEndPoint = new IPEndPoint(
                     IPAddress.Parse(settingsMngr.ReadSettings(ClientConfig.clientIPconfigkey)),

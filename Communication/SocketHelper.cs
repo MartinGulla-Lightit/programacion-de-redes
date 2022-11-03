@@ -14,16 +14,10 @@ namespace Communication
         public async Task Send(byte[] data)
         {
             int offset = 0;
-            // while (offset < data.Length)
-            // {
-                await _networkStream.WriteAsync(
-                    data,
-                    offset,
-                    data.Length - offset).ConfigureAwait(false);
-                // if (sent == 0)
-                //     throw new Exception("Connection lost");
-                // offset += sent;
-            // }
+            await _networkStream.WriteAsync(
+                data,
+                offset,
+                data.Length - offset).ConfigureAwait(false);
         }
 
         public async Task<byte[]> Receive(int length)

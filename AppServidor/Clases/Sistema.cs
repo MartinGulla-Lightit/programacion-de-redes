@@ -20,7 +20,7 @@ namespace AppServidor.Clases
                 User user = BuscarUsuario(id);
                 if (user != null)
                 {
-                    string path = "Fotos\\" + user.Username + "." + extension;
+                    string path = "Fotos/" + user.Username + "." + extension;
                     user.pathFoto = Path.Combine(Directory.GetCurrentDirectory(), path);
                     return "Foto guardada";
                 }

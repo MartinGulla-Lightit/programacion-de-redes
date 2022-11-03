@@ -14,12 +14,6 @@ namespace AppServidor.Clases
             Username = username;
             Password = password;
             Id = id;
-            // estaLogueado = false;
         }
-
-        // public void AddMensaje(Mensaje mensaje)
-        // {
-        //     Mensajes.Add(mensaje);
-        // }
     }
 }

@@ -53,7 +53,7 @@ namespace Communication
                 await _socketHelper.Receive(Protocol.FixedDataSize));
             // ---> Recibir el nombre del archivo
             string fileName = _conversionHandler.ConvertBytesToString(await _socketHelper.Receive(fileNameSize));
-            string extension = "jpg"; // fileName.Split('.').Last();
+            string extension = fileName.Split('.').Last();
             userName = userName + "." + extension;
             string fileName2 = Path.Combine("Fotos", userName);
             // if the file exists then delete it
