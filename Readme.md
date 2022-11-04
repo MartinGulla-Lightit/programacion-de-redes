@@ -1,0 +1,1 @@
+Para correr las aplicaciones, entrar a ./AppServidor/bin/Release/net6.0 y correr aplicacion AppServidor.exe, y luego entrar a ./AppCliente/bin/Release/net6.0 y correr aplicacion AppCliente.exe
