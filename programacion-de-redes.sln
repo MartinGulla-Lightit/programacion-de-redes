@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Communication", "Communicat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Protocolo", "Protocolo\Protocolo.csproj", "{EF9A7771-B905-4A14-BA54-5C00052C00EF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogsServidor", "LogsServidor\LogsServidor.csproj", "{B623ABCF-A029-471D-AB76-3D9A1E97AA9D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{EF9A7771-B905-4A14-BA54-5C00052C00EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EF9A7771-B905-4A14-BA54-5C00052C00EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EF9A7771-B905-4A14-BA54-5C00052C00EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B623ABCF-A029-471D-AB76-3D9A1E97AA9D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B623ABCF-A029-471D-AB76-3D9A1E97AA9D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B623ABCF-A029-471D-AB76-3D9A1E97AA9D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B623ABCF-A029-471D-AB76-3D9A1E97AA9D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
