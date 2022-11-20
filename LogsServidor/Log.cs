@@ -1,6 +1,6 @@
 namespace LogsServidor;
 
-public class Logs
+public class Log
 {
     public string UserName { get; set; }
 
@@ -8,10 +8,16 @@ public class Logs
 
     public DateTime Time { get; set; }
 
-    public Logs(string userName, string evento, DateTime time)
+    public Log()
+    {
+    }
+    
+    public Log(string userName, string evento)
     {
         UserName = userName;
         Event = evento;
-        Time = time;
+        Time = DateTime.Now;
     }
+
+    
 }

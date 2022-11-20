@@ -1,4 +1,8 @@
+using LogsServidor.Service;
+
 var builder = WebApplication.CreateBuilder(args);
+
+var  mq = new MQService();
 
 // Add services to the container.
 

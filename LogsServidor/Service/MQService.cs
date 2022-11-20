@@ -34,7 +34,7 @@ namespace LogsServidor.Service
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 Console.WriteLine(" [x] Received {0}", message);
-                Logs log = JsonSerializer.Deserialize<Logs>(message);
+                var log = JsonSerializer.Deserialize<Log>(message);
 
                 var data = LogsDataAccess.GetInstance();
                 data.AddLog(log);
@@ -44,8 +44,6 @@ namespace LogsServidor.Service
             channel.BasicConsume(queue: "logs",
                 autoAck: true,
                 consumer: consumer);
-
-
         }
     }
 }

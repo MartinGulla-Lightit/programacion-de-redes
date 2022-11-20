@@ -4,11 +4,17 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using LogsServidor.Service;
+using LogsServidor.Data;
+using LogsServidor.Filters;
 
 namespace LogsServidor.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("logs")]
 public class LogController : ControllerBase
 {
 
@@ -20,9 +26,17 @@ public class LogController : ControllerBase
     }
 
     [HttpGet]
-    public IEnumerable<Logs> Get()
+    public IActionResult Get([FromQuery] LogsSearchCriteria criteria)
     {
-        var data = LogsDataAccess.GetInstance();
-        return data.GetLogs();
+        try {
+            var data = LogsDataAccess.GetInstance();
+            var logs = data.GetLogs();
+            var filteredLogs = logs.Where(log => criteria.Filter(log));
+
+            return Ok(filteredLogs);
+        } catch(Exception e) {
+            return BadRequest(e.Message);
+        }
+        
     }
 }

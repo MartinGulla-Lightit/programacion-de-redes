@@ -7,7 +7,7 @@ namespace LogsServidor.Data
 {
     public class LogsDataAccess
     {
-        private List<Logs> logs;
+        private List<Log> logs;
         private object padlock;
         private static LogsDataAccess instance;
 
@@ -15,28 +15,28 @@ namespace LogsServidor.Data
         public static LogsDataAccess GetInstance() {
 
             lock (singletonPadlock) { // bloqueante 
-            if (instance == null) {
-                instance = new LogsDataAccess();
-            }
+                if (instance == null) {
+                    instance = new LogsDataAccess();
+                }
             }
             return instance;
         }
 
         private LogsDataAccess() {
-            logs = new List<Logs>();
+            logs = new List<Log>();
             padlock = new object();
         }
 
-        public void AddLog(Logs log) {
+        public void AddLog(Log log) {
             lock (padlock) 
             {
                 logs.Add(log);
             }
         }
 
-        public Logs[] GetLogs() {
+        public Log[] GetLogs() {
             lock (padlock) { 
-            return logs.ToArray();
+                return logs.ToArray();
             }
         }
 
