@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option csharp_namespace = "ServidorAdmin";
+
+package foto;
+
+service Fotos {
+  rpc DeleteFoto (DeleteFotoRequest) returns (FotoResponse) {}
+}
+
+message DeleteFotoRequest {
+  int32 id = 1;
+}
+
+message FotoResponse {
+  string message = 1;
+}

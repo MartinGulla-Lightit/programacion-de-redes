@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option csharp_namespace = "ServidorAdmin";
+
+package user;
+
+// The user service definition.
+service Users {
+  // Creates a new user
+  rpc CreateUser (CreateUserRequest) returns (Response) {}
+  // Gets all users
+  rpc GetAllUsers (GetAllUsersRequest) returns (Response) {}
+  // Edits a user
+  rpc EditUser (EditUserRequest) returns (Response) {}
+  // Deletes a user
+  rpc DeleteUser (DeleteUserRequest) returns (Response) {}
+}
+
+// The request message containing the user's username and password
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+// The request to get all users
+message GetAllUsersRequest {
+}
+
+// The request message containing the user's data to edit
+message EditUserRequest {
+  int32 id = 1;
+  string username = 2;
+  string password = 3;
+}
+
+// The request message containing the user's id to delete
+message DeleteUserRequest {
+  int32 id = 1;
+}
+
+message Response {
+  string message = 1;
+}
