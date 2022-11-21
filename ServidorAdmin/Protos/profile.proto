@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+option csharp_namespace = "ServidorAdmin";
+
+package profile;
+
+service Profiles {
+  rpc CreateProfile (CreateProfileRequest) returns (ProfileResponse) {}
+  rpc GetAllProfiles (GetAllProfilesRequest) returns (ProfileResponse) {}
+  rpc EditProfile (EditProfileRequest) returns (ProfileResponse) {}
+  rpc DeleteProfile (DeleteProfileRequest) returns (ProfileResponse) {}
+}
+
+message CreateProfileRequest {
+  int32 id = 1;
+  string descripcion = 2;
+  string habilidades = 3;
+}
+
+message GetAllProfilesRequest {
+}
+
+message EditProfileRequest {
+  int32 id = 1;
+  string descripcion = 2;
+  string habilidades = 3;
+}
+
+message DeleteProfileRequest {
+  int32 id = 1;
+}
+
+message ProfileResponse {
+  string message = 1;
+}
