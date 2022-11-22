@@ -201,7 +201,7 @@ public class Servidor : Users.UsersBase
                 await SendMessage(Constantes.RespuestaGuardarFotoPerfilExitoso, "El usuario existe", networkStreamCliente);
                 Console.WriteLine("Antes de recibir el archivo");
                 var fileCommonHandler = new FileCommsHandler(networkStreamCliente);
-                string extension = await fileCommonHandler.ReceiveFile(user.Username);
+                string extension = await fileCommonHandler.ReceiveFile(user.Id.ToString());
                 _sistema.GuardarPathFoto(id, extension);
                 Console.WriteLine("Archivo recibido!!");
             }

@@ -1,3 +1,7 @@
+using System.Text;
+using System.Text.Json;
+using RabbitMQ.Client;
+
 namespace Servidor.Clases
 {
     public class Sistema
@@ -18,8 +22,10 @@ namespace Servidor.Clases
             if (user != null)
             {
                 user.pathFoto = null;
+                AgregarLog(user.Username, "Eliminó su foto de perfil");
                 return "Foto eliminada";
             }
+            AgregarLog("Error", "No se encontró el usuario al que se le quiere eliminar la foto");
             return "No se encontro el usuario";
         }
 
@@ -30,10 +36,12 @@ namespace Servidor.Clases
                 User user = BuscarUsuario(id);
                 if (user != null)
                 {
-                    string path = "Fotos/" + user.Username + "." + extension;
+                    string path = "Fotos/" + user.Id.ToString() + "." + extension;
                     user.pathFoto = Path.Combine(Directory.GetCurrentDirectory(), path);
+                    AgregarLog(user.Username, "Cambio su foto de perfil");
                     return "Foto guardada";
                 }
+                AgregarLog("Error", "No se encontró el usuario al que se le quiere guardar la foto");
                 return "No se encontro el usuario";
             }
         }
@@ -44,11 +52,13 @@ namespace Servidor.Clases
             {
                 if (Usuarios.Any(u => u.Username == username))
                 {
+                    AgregarLog("Error", "No se pudo registrar el usuario " + username + " porque ya existe");
                     return "Usuario ya existe";
                 }
                 else
                 {
                     Usuarios.Add(new User(username, password, Usuarios.Count + 1));
+                    AgregarLog(username, "Se registro");
                     return "Registro exitoso!";
                 }
             }
@@ -63,12 +73,15 @@ namespace Servidor.Clases
                 {
                     if(BuscarUsuarioUserName(username) != null)
                     {
+                        AgregarLog("Error", "No se pudo editar el usuario " + username + " porque ya existe");
                         return "Usuario ya existe con ese nombre";
                     }
                     user.Username = username;
                     user.Password = password;
+                    AgregarLog(username, "Edito su perfil");
                     return "Usuario editado";
                 }
+                AgregarLog("Error", "No se pudo editar el usuario " + username + " porque no existe");
                 return "No se encontro el usuario";
             }
         }
@@ -81,8 +94,10 @@ namespace Servidor.Clases
                 if (user != null)
                 {
                     Usuarios.Remove(user);
+                    AgregarLog(user.Username, "Elimino su perfil");
                     return "Usuario eliminado";
                 }
+                AgregarLog("Error", "No se pudo eliminar el usuario con id " + id + " porque no existe");
                 return "No se encontro el usuario";
             }
         }
@@ -107,6 +122,7 @@ namespace Servidor.Clases
         {
             lock (Mensajes)
             {
+                AgregarLog(BuscarUsuario(mensaje.Sender).Username, "Envio un mensaje a " + BuscarUsuario(mensaje.Receiver).Username);
                 Mensajes.Add(mensaje);
             }
         }
@@ -175,10 +191,12 @@ namespace Servidor.Clases
                 var user = Usuarios.FirstOrDefault(u => u.Username.Equals(username) && u.Password.Equals(password));
                 if (user != null)
                 {
+                    AgregarLog(username, "Inicio sesion");
                     return $"{user.Id}|{user.Username}";
                 }
                 else
                 {
+                    AgregarLog("Error", "No se pudo iniciar sesion con el usuario " + username);
                     return "Usuario o contraseña incorrectos";
                 }
             }
@@ -191,10 +209,12 @@ namespace Servidor.Clases
                 var user = Usuarios.FirstOrDefault(u => u.Username == username && u.Password == password);
                 if (user != null)
                 {
+                    AgregarLog(username, "Cerro sesion");
                     return $"Hasta luego {user.Username}";
                 }
                 else
                 {
+                    AgregarLog("Error", "No se pudo cerrar sesion con el usuario " + username);
                     return "Usuario o contraseña incorrectos";
                 }
             }           
@@ -209,8 +229,10 @@ namespace Servidor.Clases
                 {
                     user.descripcion = descripcion;
                     user.habilidades = habilidades;
+                    AgregarLog(user.Username, "Creo su perfil de trabajo");
                     return $"Perfil de trabajo creado";
                 }
+                AgregarLog("Error", "No se pudo crear el perfil de trabajo del usuario con id " + userId + " porque no existe o ya tiene un perfil");
                 return "El usuario ya tiene un perfil de trabajo";
             }
         }
@@ -224,8 +246,10 @@ namespace Servidor.Clases
                 {
                     user.descripcion = descripcion;
                     user.habilidades = habilidades;
+                    AgregarLog(user.Username, "Edito su perfil de trabajo");
                     return $"Perfil de trabajo editado";
                 }
+                AgregarLog("Error", "No se pudo editar el perfil de trabajo del usuario con id " + userId + " porque no existe o no tiene un perfil");
                 return "El usuario no tiene un perfil de trabajo";
             }
         }
@@ -239,8 +263,10 @@ namespace Servidor.Clases
                 {
                     user.descripcion = null;
                     user.habilidades = null;
+                    AgregarLog(user.Username, "Elimino su perfil de trabajo");
                     return $"Perfil de trabajo eliminado";
                 }
+                AgregarLog("Error", "No se pudo eliminar el perfil de trabajo del usuario con id " + userId + " porque no existe o no tiene un perfil");
                 return "El usuario no tiene un perfil de trabajo";
             }
         }
@@ -281,6 +307,41 @@ namespace Servidor.Clases
                 }
                 return "";
             }
+        }
+
+        public void AgregarLog(string userName, string evento)
+        {
+            //1 - definimos un FACTORY para inicializar la conexion
+            //2 - definir la connection
+            //3 - definir el channel
+            var factory = new ConnectionFactory() { HostName = "localhost" };
+            using (var connection = factory.CreateConnection())
+            using (var channel = connection.CreateModel())
+            {
+                //4 - Declaramos la cola de mensajes
+                channel.QueueDeclare(queue: "logs",
+                    durable: false,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: null);
+
+                var message = "";
+                message = CrearMensajeLog(channel, userName, evento);
+                Console.WriteLine(" [x] Sent {0}", message);
+            }
+        }
+
+        public string CrearMensajeLog(IModel channel, string userName, string evento)
+        {
+            var log = new Log(userName, evento);
+            
+            string mensaje = JsonSerializer.Serialize(log);
+            var body = Encoding.UTF8.GetBytes(mensaje);
+            channel.BasicPublish(exchange: "",
+                routingKey: "logs",
+                basicProperties: null,
+                body: body);
+            return mensaje;
         }
     }
 }

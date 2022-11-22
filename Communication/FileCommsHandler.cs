@@ -46,6 +46,7 @@ namespace Communication
             }
         }
 
+        // username = id
         public async Task<string> ReceiveFile(string userName)
         {
             // ---> Recibir el largo del nombre del archivo
