@@ -8,6 +8,7 @@ namespace Servidor.Clases
     {
         public List<User> Usuarios { get; set; }
         public List<Mensaje> Mensajes { get; set; }
+        public int nextId { get; set; }
 
         public Sistema()
         {
@@ -15,6 +16,7 @@ namespace Servidor.Clases
             Mensajes = new List<Mensaje>();
             Usuarios.Add(new User("admin", "admin", 1){descripcion = "Administrador", habilidades = new string[] {"Administrador"}});
             Usuarios.Add(new User("user", "user", 2){descripcion = "Usuario", habilidades = new string[] {"Usuario"}});
+            nextId = 2;
         }
         public string EliminarFotoDeUsuario(string id)
         {
@@ -57,7 +59,7 @@ namespace Servidor.Clases
                 }
                 else
                 {
-                    Usuarios.Add(new User(username, password, Usuarios.Count + 1));
+                    Usuarios.Add(new User(username, password, ++nextId));
                     AgregarLog(username, "Se registro");
                     return "Registro exitoso!";
                 }
