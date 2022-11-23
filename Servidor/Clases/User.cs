@@ -23,7 +23,7 @@ namespace Servidor.Clases
 
         public string ToStringConPerfil()
         {
-            return "ID: " + Id + ", Username: " + Username + ", Descripcion: " + (descripcion == null ? "No tiene descripcion" : descripcion) + ", Habilidades: " + string.Join(", ", habilidades == null ? "No tiene habilidades" : habilidades);
+            return "ID: " + Id + ", Username: " + Username + ", Descripcion: " + (descripcion == null ? "No tiene descripcion" : descripcion) + ", Habilidades: " + (habilidades == null ? "Sin habilidades" : string.Join(", ", habilidades));
         }
     }
 }
